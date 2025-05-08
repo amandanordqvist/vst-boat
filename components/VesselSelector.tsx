@@ -51,7 +51,7 @@ export default function VesselSelector() {
           <Text style={styles.vesselName}>{selected.name}</Text>
         </View>
         <Animated.View style={iconStyle}>
-          <ChevronDown color={Colors.neutral[600]} size={24} />
+          <ChevronDown color="#1A5F9C" size={24} />
         </Animated.View>
       </TouchableOpacity>
       
@@ -89,7 +89,7 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   selector: {
-    backgroundColor: Colors.background,
+    backgroundColor: '#FFFFFF',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -108,21 +108,23 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
   },
   vesselType: {
-    color: Colors.neutral[500],
-    fontFamily: 'Inter-Regular',
+    color: '#667085', // Secondary text color
+    fontFamily: Platform.OS === 'ios' ? 'San Francisco' : 'Roboto',
     fontSize: 12,
+    fontWeight: '400',
   },
   vesselName: {
-    color: Colors.neutral[900],
-    fontFamily: 'Poppins-SemiBold',
+    color: '#1A5F9C', // Primary deep blue
+    fontFamily: Platform.OS === 'ios' ? 'San Francisco' : 'Roboto',
     fontSize: 16,
+    fontWeight: '600',
   },
   dropdown: {
     position: 'absolute',
     top: '100%',
     left: 0,
     right: 0,
-    backgroundColor: Colors.background,
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     marginTop: 8,
     shadowColor: '#000',
@@ -139,12 +141,12 @@ const styles = StyleSheet.create({
   option: {
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.neutral[100],
+    borderBottomColor: '#E5F2FF', // Light blue from palette
   },
   selectedOption: {
-    backgroundColor: Colors.primary[50],
+    backgroundColor: '#E5F2FF', // Light blue from palette
   },
   selectedText: {
-    color: Colors.primary[600],
+    color: '#1A5F9C', // Primary deep blue
   },
 });

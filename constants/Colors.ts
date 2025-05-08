@@ -1,44 +1,44 @@
 const Colors = {
   // Main theme colors
   primary: {
-    100: '#E6F2FF',
-    200: '#B3D9FF',
-    300: '#80BFFF',
-    400: '#4DA6FF',
-    500: '#1A8CFF', // Primary brand color
-    600: '#0066CC',
-    700: '#004C99',
-    800: '#003366',
-    900: '#001933',
+    100: '#E5F2FF', // Light blue for secondary elements
+    200: '#C7E2FF',
+    300: '#A0CDFF',
+    400: '#6AAEF0',
+    500: '#3D7AB3', // Medium blue
+    600: '#2F6CA4',
+    700: '#1A5F9C', // Primary deep blue
+    800: '#124978',
+    900: '#0A3355',
   },
   secondary: {
-    100: '#E6FFF9',
-    200: '#B3FFEF',
-    300: '#80FFE6',
-    400: '#4DFFDC',
-    500: '#1AD2B5', // Secondary brand color
-    600: '#00CCB2',
-    700: '#009980',
-    800: '#006653',
-    900: '#003329',
+    100: '#F2F8FF',
+    200: '#E5F2FF', // Light blue for secondary elements
+    300: '#C7E2FF',
+    400: '#A0CDFF',
+    500: '#6AAEF0',
+    600: '#3D7AB3',
+    700: '#2F6CA4',
+    800: '#1A5F9C',
+    900: '#124978',
   },
   accent: {
-    100: '#FFF2E6',
-    200: '#FFD9B3',
-    300: '#FFC080',
-    400: '#FFA74D',
-    500: '#FF8D1A', // Accent color
-    600: '#E67300',
-    700: '#B35A00',
-    800: '#804000',
-    900: '#4D2600',
+    100: '#FFF5E5',
+    200: '#FFEAC7',
+    300: '#FFDCA0',
+    400: '#FFC670',
+    500: '#FF9500', // Accent orange for warnings and CTAs
+    600: '#E68600',
+    700: '#CC7700',
+    800: '#A35F00',
+    900: '#7A4700',
   },
   // Status colors
   status: {
-    success: '#22C55E',
-    warning: '#F59E0B',
-    error: '#EF4444',
-    info: '#3B82F6',
+    success: '#43A047', // Green for completed items
+    warning: '#FF9500', // Orange for warnings
+    error: '#E53935', // Red for critical alerts
+    info: '#1A5F9C', // Deep blue for information
   },
   // Neutral tones
   neutral: {
@@ -47,7 +47,7 @@ const Colors = {
     200: '#E5E7EB',
     300: '#D1D5DB',
     400: '#9CA3AF',
-    500: '#6B7280',
+    500: '#667085', // Secondary text color
     600: '#4B5563',
     700: '#374151',
     800: '#1F2937',
@@ -55,15 +55,15 @@ const Colors = {
   },
   // Special colors
   water: {
-    light: '#BBDEFB',
-    medium: '#64B5F6',
-    deep: '#1E88E5',
-    dark: '#0D47A1',
+    light: '#E5F2FF',
+    medium: '#6AAEF0',
+    deep: '#1A5F9C',
+    dark: '#124978',
   },
-  background: '#FFFFFF',
+  background: '#FFFFFF', // White for clean backgrounds
   card: 'rgba(255, 255, 255, 0.9)',
   text: '#1F2937',
-  border: '#E5E7EB',
+  border: '#E5F2FF', // Light blue for borders
 };
 
 export default Colors;

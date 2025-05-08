@@ -37,18 +37,25 @@ export default function MaintenanceAlerts({ alerts }: MaintenanceAlertsProps) {
           onPress={handlePress}
         >
           <Text style={styles.viewAllText}>View All</Text>
-          <ArrowRight size={16} color={Colors.primary[500]} />
+          <ArrowRight size={16} color={Colors.primary[700]} />
         </TouchableOpacity>
       </View>
       
       <View style={styles.alertsContainer}>
-        {alerts.map((alert) => (
-          <StatusCard
-            key={alert.id}
-            type={alert.type}
-            title={alert.title}
-            message={alert.message}
-          />
+        {alerts.map((alert, index) => (
+          <View 
+            key={alert.id} 
+            style={[
+              styles.alertWrapper, 
+              index < alerts.length - 1 && styles.alertWithMargin
+            ]}
+          >
+            <StatusCard
+              type={alert.type}
+              title={alert.title}
+              message={alert.message}
+            />
+          </View>
         ))}
       </View>
     </View>
@@ -57,32 +64,47 @@ export default function MaintenanceAlerts({ alerts }: MaintenanceAlertsProps) {
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 24,
-    marginBottom: 16,
+    backgroundColor: Colors.background,
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   headerContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    marginBottom: 12,
+    marginBottom: 20,
   },
   title: {
     fontFamily: 'Poppins-SemiBold',
-    fontSize: 18,
-    color: Colors.neutral[800],
+    fontSize: 20,
+    color: Colors.neutral[900],
   },
   viewAllButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: Colors.secondary[200],
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
   },
   viewAllText: {
-    fontFamily: 'Inter-Medium',
+    fontFamily: 'Poppins-Medium',
     fontSize: 14,
-    color: Colors.primary[500],
+    color: Colors.primary[700],
     marginRight: 4,
   },
   alertsContainer: {
-    paddingHorizontal: 16,
+    
   },
+  alertWrapper: {
+    
+  },
+  alertWithMargin: {
+    marginBottom: 14,
+  }
 });

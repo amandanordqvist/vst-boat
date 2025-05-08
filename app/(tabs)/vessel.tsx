@@ -1,8 +1,10 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Anchor, Ship, Ruler, Calendar, PenTool as Tool, FileText, LifeBuoy, Gauge } from 'lucide-react-native';
+import { Anchor, Ship, Ruler, Calendar, PenTool as Tool, FileText, LifeBuoy, Gauge, PlusCircle } from 'lucide-react-native';
 import Colors from '@/constants/Colors';
+import { router } from 'expo-router';
+import { useAuth } from '@/hooks/useAuth';
 
 interface VesselDetail {
   label: string;
@@ -58,9 +60,25 @@ const specifications = [
 
 export default function VesselScreen() {
   const insets = useSafeAreaInsets();
+  const { user } = useAuth();
+  
+  const handleRegisterBoat = () => {
+    router.push('/boat-registration');
+  };
   
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
+      <View style={styles.headerBar}>
+        <Text style={styles.screenTitle}>My Vessel</Text>
+        <TouchableOpacity 
+          style={styles.registerButton}
+          onPress={handleRegisterBoat}
+        >
+          <PlusCircle size={20} color={Colors.primary[600]} />
+          <Text style={styles.registerButtonText}>Register Boat</Text>
+        </TouchableOpacity>
+      </View>
+      
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <View style={styles.vesselImagePlaceholder}>
@@ -122,6 +140,14 @@ export default function VesselScreen() {
             </TouchableOpacity>
           </View>
         </View>
+        
+        <View style={styles.emptyStateContainer}>
+          <Text style={styles.emptyStateText}>
+            {user?.boats.length === 0 
+              ? "You haven't registered any boats yet. Use the 'Register Boat' button to add your first boat."
+              : "This is your primary vessel. Register additional boats using the 'Register Boat' button."}
+          </Text>
+        </View>
       </ScrollView>
     </View>
   );
@@ -131,6 +157,35 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.neutral[50],
+  },
+  headerBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: Colors.background,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.neutral[100],
+  },
+  screenTitle: {
+    fontFamily: 'Poppins-SemiBold',
+    fontSize: 18,
+    color: Colors.neutral[900],
+  },
+  registerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 122, 255, 0.1)',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+  },
+  registerButtonText: {
+    fontFamily: 'Poppins-Medium',
+    fontSize: 14,
+    color: Colors.primary[600],
+    marginLeft: 6,
   },
   content: {
     flex: 1,
@@ -146,7 +201,7 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: Colors.primary[50],
+    backgroundColor: 'rgba(0, 122, 255, 0.1)',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
@@ -238,5 +293,18 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Colors.neutral[500],
     textAlign: 'center',
+  },
+  emptyStateContainer: {
+    marginTop: 16,
+    marginBottom: 40,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+  },
+  emptyStateText: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 14,
+    color: Colors.neutral[500],
+    textAlign: 'center',
+    lineHeight: 20,
   },
 });

@@ -1,5 +1,5 @@
 import React, { ReactNode } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Platform } from 'react-native';
 import Colors from '@/constants/Colors';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 
@@ -51,16 +51,16 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 1,
+      height: 2,
     },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
   },
   iconContainer: {
     width: 40,
     height: 40,
-    borderRadius: 8,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -69,14 +69,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 12,
+    fontFamily: Platform.OS === 'ios' ? 'San Francisco' : 'Roboto',
+    fontSize: 12, // Label text
     color: Colors.neutral[500],
-    marginBottom: 2,
+    marginBottom: 4,
   },
   value: {
-    fontFamily: 'Poppins-SemiBold',
-    fontSize: 16,
-    color: Colors.neutral[900],
+    fontFamily: Platform.OS === 'ios' ? 'San Francisco' : 'Roboto',
+    fontSize: 16, // H3 size
+    fontWeight: '600',
+    color: Colors.primary[700],
   },
 });

@@ -14,6 +14,7 @@ import {
   Inter_400Regular,
   Inter_500Medium,
 } from '@expo-google-fonts/inter';
+import { AuthProvider } from '@/hooks/useAuth';
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -44,12 +45,16 @@ export default function RootLayout() {
   }
 
   return (
-    <>
+    <AuthProvider>
+      <StatusBar style="light" />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="auth" />
+        <Stack.Screen name="registration" />
+        <Stack.Screen name="boat-registration" />
+        <Stack.Screen name="boat-scanner" />
         <Stack.Screen name="+not-found" />
       </Stack>
-      <StatusBar style="auto" />
-    </>
+    </AuthProvider>
   );
 }

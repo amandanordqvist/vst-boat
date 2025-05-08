@@ -81,19 +81,19 @@ export default function StatusCard({ type, title, message }: StatusCardProps) {
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 16,
-    borderRadius: 16,
+    marginBottom: 12,
+    borderRadius: 12,
     overflow: 'hidden',
   },
   blurContainer: {
-    borderRadius: 16,
+    borderRadius: 12,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.2)',
   },
   regularContainer: {
     backgroundColor: Colors.background,
-    borderRadius: 16,
+    borderRadius: 12,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -101,7 +101,7 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 2,
+    elevation: 3,
   },
   contentContainer: {
     padding: 16,
@@ -116,14 +116,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    fontFamily: 'Poppins-Medium',
-    fontSize: 16,
+    fontFamily: Platform.OS === 'ios' ? 'San Francisco' : 'Roboto',
+    fontSize: 16, // H3 size
+    fontWeight: '600',
     color: Colors.neutral[900],
     marginBottom: 4,
   },
   message: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 14,
+    fontFamily: Platform.OS === 'ios' ? 'San Francisco' : 'Roboto',
+    fontSize: 14, // Body text
+    lineHeight: 19.6, // ~1.4 line height
     color: Colors.neutral[600],
   },
   indicator: {
@@ -132,7 +134,7 @@ const styles = StyleSheet.create({
     top: 0,
     bottom: 0,
     width: 4,
-    borderTopLeftRadius: 16,
-    borderBottomLeftRadius: 16,
+    borderTopLeftRadius: 12,
+    borderBottomLeftRadius: 12,
   },
 });

@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import Colors from '@/constants/Colors';
-import { ClipboardCheck, PenTool as Tool, MapPin, CircleGauge as GaugeCircle } from 'lucide-react-native';
+import { Ship, Wrench, CircleAlert, Fuel } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 
 interface QuickActionProps {
@@ -43,24 +43,24 @@ export default function QuickActions() {
       <Text style={styles.title}>Quick Actions</Text>
       <View style={styles.actionsContainer}>
         <QuickAction 
-          icon={<ClipboardCheck size={24} color={Colors.primary[500]} />}
-          title="Checklists"
-          onPress={() => handleAction('Checklists')}
+          icon={<Ship size={24} color="#FFFFFF" />}
+          title="Start Trip"
+          onPress={() => handleAction('Start Trip')}
         />
         <QuickAction 
-          icon={<Tool size={24} color={Colors.secondary[500]} />}
+          icon={<Fuel size={24} color="#FFFFFF" />}
+          title="Record Fuel"
+          onPress={() => handleAction('Record Fuel')}
+        />
+        <QuickAction 
+          icon={<Wrench size={24} color="#FFFFFF" />}
           title="Service"
           onPress={() => handleAction('Service')}
         />
         <QuickAction 
-          icon={<MapPin size={24} color={Colors.accent[500]} />}
-          title="Location"
-          onPress={() => handleAction('Location')}
-        />
-        <QuickAction 
-          icon={<GaugeCircle size={24} color={Colors.water.deep} />}
-          title="Fuel"
-          onPress={() => handleAction('Fuel')}
+          icon={<CircleAlert size={24} color="#FFFFFF" />}
+          title="Report Issue"
+          onPress={() => handleAction('Report Issue')}
         />
       </View>
     </View>
@@ -70,18 +70,26 @@ export default function QuickActions() {
 const styles = StyleSheet.create({
   container: {
     marginVertical: 16,
+    marginHorizontal: 16,
+    backgroundColor: Colors.background,
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   title: {
-    fontFamily: 'Poppins-SemiBold',
-    fontSize: 18,
-    color: Colors.neutral[800],
-    marginBottom: 12,
-    paddingHorizontal: 16,
+    fontFamily: Platform.OS === 'ios' ? 'San Francisco' : 'Roboto',
+    fontSize: 20, // H2 size
+    fontWeight: '600',
+    color: Colors.neutral[900],
+    marginBottom: 16,
   },
   actionsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
   },
   actionButton: {
     alignItems: 'center',
@@ -89,18 +97,24 @@ const styles = StyleSheet.create({
     width: '22%',
   },
   iconContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: Colors.neutral[100],
+    width: 56,
+    height: 56,
+    borderRadius: 12,
+    backgroundColor: Colors.primary[700],
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
   },
   actionText: {
-    fontFamily: 'Inter-Medium',
-    fontSize: 12,
-    color: Colors.neutral[700],
+    fontFamily: Platform.OS === 'ios' ? 'San Francisco' : 'Roboto',
+    fontSize: 12, // Label text
+    fontWeight: '500',
+    color: Colors.neutral[800],
     textAlign: 'center',
   },
 });

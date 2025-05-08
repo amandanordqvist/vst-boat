@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Image } from 'react-native';
+import { View, Text, StyleSheet, Image, Platform } from 'react-native';
 import { MapPin, Wind, Droplets } from 'lucide-react-native';
 import Colors from '@/constants/Colors';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -23,7 +23,7 @@ export default function WeatherWidget({
 }: WeatherWidgetProps) {
   return (
     <LinearGradient
-      colors={[Colors.water.medium, Colors.water.deep]}
+      colors={[Colors.primary[600], Colors.primary[700]]}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={styles.container}
@@ -64,11 +64,16 @@ export default function WeatherWidget({
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 16,
+    borderRadius: 12,
     padding: 16,
     marginHorizontal: 16,
     marginBottom: 16,
     overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1, 
+    shadowRadius: 4,
+    elevation: 3,
   },
   header: {
     flexDirection: 'row',
@@ -78,8 +83,9 @@ const styles = StyleSheet.create({
   },
   title: {
     color: '#FFFFFF',
-    fontFamily: 'Poppins-SemiBold',
+    fontFamily: Platform.OS === 'ios' ? 'San Francisco' : 'Roboto',
     fontSize: 16,
+    fontWeight: '600',
   },
   locationContainer: {
     flexDirection: 'row',
@@ -87,7 +93,7 @@ const styles = StyleSheet.create({
   },
   location: {
     color: '#FFFFFF',
-    fontFamily: 'Inter-Regular',
+    fontFamily: Platform.OS === 'ios' ? 'San Francisco' : 'Roboto',
     fontSize: 12,
     marginLeft: 4,
     opacity: 0.8,
@@ -103,13 +109,15 @@ const styles = StyleSheet.create({
   },
   temperature: {
     color: '#FFFFFF',
-    fontFamily: 'Poppins-Bold',
+    fontFamily: Platform.OS === 'ios' ? 'San Francisco' : 'Roboto',
     fontSize: 36,
+    fontWeight: '700',
   },
   condition: {
     color: '#FFFFFF',
-    fontFamily: 'Inter-Regular',
+    fontFamily: Platform.OS === 'ios' ? 'San Francisco' : 'Roboto',
     fontSize: 14,
+    lineHeight: 20,
     opacity: 0.8,
   },
   weatherIcon: {
@@ -129,8 +137,9 @@ const styles = StyleSheet.create({
   },
   detailText: {
     color: '#FFFFFF',
-    fontFamily: 'Inter-Medium',
+    fontFamily: Platform.OS === 'ios' ? 'San Francisco' : 'Roboto',
     fontSize: 14,
+    fontWeight: '500',
     marginLeft: 6,
   },
   divider: {

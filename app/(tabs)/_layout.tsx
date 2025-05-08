@@ -1,62 +1,249 @@
-import { Tabs } from 'expo-router';
-import { Platform } from 'react-native';
-import { Chrome as Home, ClipboardCheck, Droplets, MapPin, User } from 'lucide-react-native';
+import { Tabs, Redirect } from 'expo-router';
+import { Platform, View, StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { Ship, CheckSquare, Wrench, MapPin, Fuel } from 'lucide-react-native';
 import Colors from '@/constants/Colors';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import { useAuth } from '@/hooks/useAuth';
+
+// Extend the options type to include the href property
+interface ExtendedTabOptions {
+  href?: null;
+  title?: string;
+  tabBarAccessibilityLabel?: string;
+  tabBarTestID?: string;
+  tabBarIcon?: (props: { focused: boolean; color: string; size: number }) => React.ReactNode;
+}
+
+// Define which tabs should be visible in the tab bar
+const VISIBLE_TABS = ['index', 'checklists', 'location', 'maintenance', 'fuel'];
 
 export default function TabLayout() {
+  const insets = useSafeAreaInsets();
+  const isIOS = Platform.OS === 'ios';
+  const { isAuthenticated, isLoading } = useAuth();
+  
+  // If not loading and not authenticated, redirect to auth
+  if (!isLoading && !isAuthenticated) {
+    return <Redirect href="/auth" />;
+  }
+  
+  // Custom tab bar component for active indicators
+  const CustomTabBar = ({ state, descriptors, navigation }: BottomTabBarProps) => {
+    // Filter only visible routes based on our VISIBLE_TABS list
+    const visibleRoutes = state.routes.filter(route => VISIBLE_TABS.includes(route.name));
+    
+    return (
+      <View style={[styles.tabBar, { paddingBottom: isIOS ? insets.bottom : 16 }]}>
+        {isIOS && (
+          <View style={styles.tabBarBackground}>
+            <LinearGradient
+              colors={['rgba(255, 255, 255, 0.9)', 'rgba(255, 255, 255, 0.85)']}
+              style={{ flex: 1 }}
+            />
+          </View>
+        )}
+        
+        {visibleRoutes.map((route, index) => {
+          const { options } = descriptors[route.key];
+          // Cast options to our extended type
+          const extendedOptions = options as unknown as ExtendedTabOptions;
+          
+          // Find the actual index in the original state.routes array
+          const actualIndex = state.routes.findIndex(r => r.key === route.key);
+          const isFocused = state.index === actualIndex;
+          
+          const onPress = () => {
+            const event = navigation.emit({
+              type: 'tabPress',
+              target: route.key,
+              canPreventDefault: true,
+            });
+            
+            if (!isFocused && !event.defaultPrevented) {
+              navigation.navigate(route.name);
+            }
+          };
+          
+          const onLongPress = () => {
+            navigation.emit({
+              type: 'tabLongPress',
+              target: route.key,
+            });
+          };
+          
+          return (
+            <View key={route.key} style={styles.tabItem}>
+              <TouchableOpacity
+                accessibilityRole="button"
+                accessibilityState={isFocused ? { selected: true } : {}}
+                accessibilityLabel={extendedOptions.tabBarAccessibilityLabel}
+                testID={extendedOptions.tabBarTestID}
+                onPress={onPress}
+                onLongPress={onLongPress}
+                style={[
+                  styles.tabButton,
+                  isFocused && styles.tabButtonActive
+                ]}
+              >
+                {extendedOptions.tabBarIcon && extendedOptions.tabBarIcon({
+                  focused: isFocused,
+                  color: isFocused ? Colors.primary[700] : Colors.neutral[400],
+                  size: 26
+                })}
+                <Text style={[
+                  styles.tabLabel,
+                  { color: isFocused ? Colors.primary[700] : Colors.neutral[400] }
+                ]}>
+                  {extendedOptions.title || route.name}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          );
+        })}
+      </View>
+    );
+  };
+  
   return (
     <Tabs
+      tabBar={props => <CustomTabBar {...props} />}
       screenOptions={{
-        tabBarActiveTintColor: Colors.primary[500],
-        tabBarInactiveTintColor: Colors.neutral[400],
-        tabBarStyle: {
-          backgroundColor: Colors.background,
-          borderTopColor: Platform.OS === 'web' ? Colors.neutral[200] : Colors.neutral[100],
-          height: 60,
-          paddingBottom: 6,
-          paddingTop: 6,
-        },
-        tabBarLabelStyle: {
-          fontSize: 12,
-          fontFamily: 'Poppins-Medium',
-        },
         headerShown: false
       }}>
       <Tabs.Screen
         name="index"
         options={{
           title: 'Dashboard',
-          tabBarIcon: ({ color, size }) => <Home strokeWidth={1.5} size={size} color={color} />,
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ship strokeWidth={2} size={focused ? size + 2 : size} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="checklists"
         options={{
           title: 'Checklists',
-          tabBarIcon: ({ color, size }) => <ClipboardCheck strokeWidth={1.5} size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="fuel"
-        options={{
-          title: 'Fuel',
-          tabBarIcon: ({ color, size }) => <Droplets strokeWidth={1.5} size={size} color={color} />,
+          tabBarIcon: ({ color, size, focused }) => (
+            <CheckSquare strokeWidth={2} size={focused ? size + 2 : size} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="location"
         options={{
           title: 'Location',
-          tabBarIcon: ({ color, size }) => <MapPin strokeWidth={1.5} size={size} color={color} />,
+          tabBarIcon: ({ color, size, focused }) => (
+            <MapPin strokeWidth={2} size={focused ? size + 2 : size} color={color} />
+          ),
         }}
       />
+      <Tabs.Screen
+        name="maintenance"
+        options={{
+          title: 'Service',
+          tabBarIcon: ({ color, size, focused }) => (
+            <Wrench strokeWidth={2} size={focused ? size + 2 : size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="fuel"
+        options={{
+          title: 'Fuel',
+          tabBarIcon: ({ color, size, focused }) => (
+            <Fuel strokeWidth={2} size={focused ? size + 2 : size} color={color} />
+          ),
+        }}
+      />
+      
+      {/* Hidden screens that are accessible from other navigation methods */}
       <Tabs.Screen
         name="profile"
         options={{
           title: 'Profile',
-          tabBarIcon: ({ color, size }) => <User strokeWidth={1.5} size={size} color={color} />,
+          headerShown: true,
+        }}
+      />
+      <Tabs.Screen
+        name="vessel"
+        options={{
+          title: 'Vessel',
+          headerShown: true,
+        }}
+      />
+      <Tabs.Screen
+        name="voyage"
+        options={{
+          title: 'Voyage',
+          headerShown: true,
+        }}
+      />
+      <Tabs.Screen
+        name="weather"
+        options={{
+          title: 'Weather',
+          headerShown: true,
+        }}
+      />
+      <Tabs.Screen
+        name="documents"
+        options={{
+          title: 'Documents',
+          headerShown: true,
         }}
       />
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  tabBar: {
+    position: 'absolute',
+    bottom: Platform.OS === 'ios' ? 20 : 0,
+    left: Platform.OS === 'ios' ? 16 : 0,
+    right: Platform.OS === 'ios' ? 16 : 0,
+    height: Platform.OS === 'ios' ? 88 : 70,
+    backgroundColor: Platform.OS === 'ios' ? 'transparent' : Colors.background,
+    flexDirection: 'row',
+    borderRadius: Platform.OS === 'ios' ? 28 : 0,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 8,
+    paddingTop: 10,
+    paddingHorizontal: 12,
+  },
+  tabBarBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 28,
+    overflow: 'hidden',
+  },
+  tabItem: {
+    flex: 1,
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  tabButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    borderRadius: 16,
+    width: '100%',
+  },
+  tabButtonActive: {
+    backgroundColor: `${Colors.primary[700]}15`,
+  },
+  tabLabel: {
+    fontSize: 12,
+    fontFamily: Platform.OS === 'ios' ? 'San Francisco' : 'Roboto',
+    fontWeight: '600',
+    marginTop: 4,
+  }
+});
