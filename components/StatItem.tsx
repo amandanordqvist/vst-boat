@@ -1,83 +1,94 @@
-import React, { ReactNode } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, Platform } from 'react-native';
 import Colors from '@/constants/Colors';
-import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 
 interface StatItemProps {
-  icon: ReactNode;
+  icon: React.ReactNode;
   title: string;
   value: string;
-  backgroundColor: string;
+  backgroundColor?: string;
+  status?: 'good' | 'warning' | 'alert' | 'neutral';
 }
 
-export default function StatItem({ icon, title, value, backgroundColor }: StatItemProps) {
-  const opacity = useSharedValue(0);
-  const translateY = useSharedValue(10);
-  
-  React.useEffect(() => {
-    translateY.value = withTiming(0, { duration: 400 });
-    opacity.value = withTiming(1, { duration: 400 });
-  }, []);
-  
-  const animatedStyle = useAnimatedStyle(() => {
-    return {
-      opacity: opacity.value,
-      transform: [{ translateY: translateY.value }]
-    };
-  });
-  
+export default function StatItem({ 
+  icon, 
+  title, 
+  value, 
+  backgroundColor = Colors.secondary[200],
+  status // Status can be determined by the parent based on the value
+}: StatItemProps) {
+  // Get status color based on status prop
+  const getStatusColor = () => {
+    switch(status) {
+      case 'good':
+        return Colors.status.success;
+      case 'warning':
+        return Colors.status.warning;
+      case 'alert':
+        return Colors.status.error;
+      case 'neutral':
+      default:
+        return Colors.neutral[400];
+    }
+  };
+
   return (
-    <Animated.View style={[styles.container, animatedStyle]}>
-      <View style={[styles.iconContainer, { backgroundColor }]}>
+    <View style={[styles.container, { backgroundColor }]}>
+      <View style={styles.iconContainer}>
         {icon}
       </View>
       <View style={styles.textContainer}>
         <Text style={styles.title}>{title}</Text>
-        <Text style={styles.value}>{value}</Text>
+        <View style={styles.valueContainer}>
+          <Text style={styles.value}>{value}</Text>
+          {status && (
+            <View 
+              style={[
+                styles.statusIndicator, 
+                { backgroundColor: getStatusColor() }
+              ]} 
+            />
+          )}
+        </View>
       </View>
-    </Animated.View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    width: '48%',
+    padding: 12,
+    borderRadius: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    backgroundColor: Colors.background,
-    borderRadius: 12,
-    width: '48%',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
   },
   iconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
+    marginRight: 8,
   },
   textContainer: {
     flex: 1,
   },
   title: {
     fontFamily: Platform.OS === 'ios' ? 'San Francisco' : 'Roboto',
-    fontSize: 12, // Label text
-    color: Colors.neutral[500],
-    marginBottom: 4,
+    fontSize: 13,
+    color: Colors.neutral[600],
+    marginBottom: 2,
+  },
+  valueContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   value: {
     fontFamily: Platform.OS === 'ios' ? 'San Francisco' : 'Roboto',
-    fontSize: 16, // H3 size
+    fontSize: 16,
     fontWeight: '600',
-    color: Colors.primary[700],
+    color: Colors.neutral[900],
+    marginRight: 6,
+  },
+  statusIndicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
 });

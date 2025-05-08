@@ -65,8 +65,8 @@ export default function MaintenanceAlerts({ alerts }: MaintenanceAlertsProps) {
 const styles = StyleSheet.create({
   container: {
     backgroundColor: Colors.background,
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: 20,
+    padding: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -77,11 +77,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
   },
   title: {
-    fontFamily: 'Poppins-SemiBold',
-    fontSize: 20,
+    fontFamily: Platform.OS === 'ios' ? 'San Francisco' : 'Roboto',
+    fontSize: 18,
+    fontWeight: '600',
     color: Colors.neutral[900],
   },
   viewAllButton: {
@@ -89,22 +90,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: Colors.secondary[200],
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 6,
     borderRadius: 12,
   },
   viewAllText: {
-    fontFamily: 'Poppins-Medium',
+    fontFamily: Platform.OS === 'ios' ? 'San Francisco' : 'Roboto',
     fontSize: 14,
     color: Colors.primary[700],
     marginRight: 4,
+    fontWeight: '500',
   },
   alertsContainer: {
-    
+    marginTop: 4,
   },
   alertWrapper: {
     
   },
   alertWithMargin: {
-    marginBottom: 14,
+    marginBottom: 12,
   }
 });

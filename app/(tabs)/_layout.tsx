@@ -39,7 +39,7 @@ export default function TabLayout() {
         {isIOS && (
           <View style={styles.tabBarBackground}>
             <LinearGradient
-              colors={['rgba(255, 255, 255, 0.9)', 'rgba(255, 255, 255, 0.85)']}
+              colors={['rgba(255, 255, 255, 0.95)', 'rgba(255, 255, 255, 0.9)']}
               style={{ flex: 1 }}
             />
           </View>
@@ -89,12 +89,12 @@ export default function TabLayout() {
               >
                 {extendedOptions.tabBarIcon && extendedOptions.tabBarIcon({
                   focused: isFocused,
-                  color: isFocused ? Colors.primary[700] : Colors.neutral[400],
-                  size: 26
+                  color: isFocused ? Colors.primary[700] : Colors.neutral[500],
+                  size: 24
                 })}
                 <Text style={[
                   styles.tabLabel,
-                  { color: isFocused ? Colors.primary[700] : Colors.neutral[400] }
+                  isFocused ? styles.activeTabLabel : styles.inactiveTabLabel
                 ]}>
                   {extendedOptions.title || route.name}
                 </Text>
@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
     left: Platform.OS === 'ios' ? 16 : 0,
     right: Platform.OS === 'ios' ? 16 : 0,
     height: Platform.OS === 'ios' ? 88 : 70,
-    backgroundColor: Platform.OS === 'ios' ? 'transparent' : Colors.background,
+    backgroundColor: Platform.OS === 'ios' ? 'transparent' : 'rgba(255, 255, 255, 0.97)',
     flexDirection: 'row',
     borderRadius: Platform.OS === 'ios' ? 28 : 0,
     shadowColor: '#000',
@@ -215,6 +215,8 @@ const styles = StyleSheet.create({
     elevation: 8,
     paddingTop: 10,
     paddingHorizontal: 12,
+    borderTopWidth: Platform.OS === 'ios' ? 0 : 1,
+    borderTopColor: Platform.OS === 'ios' ? 'transparent' : 'rgba(0, 0, 0, 0.05)',
   },
   tabBarBackground: {
     position: 'absolute',
@@ -224,6 +226,8 @@ const styles = StyleSheet.create({
     bottom: 0,
     borderRadius: 28,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.05)',
   },
   tabItem: {
     flex: 1,
@@ -238,12 +242,21 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   tabButtonActive: {
-    backgroundColor: `${Colors.primary[700]}15`,
+    backgroundColor: `${Colors.primary[100]}`,
   },
   tabLabel: {
     fontSize: 12,
     fontFamily: Platform.OS === 'ios' ? 'San Francisco' : 'Roboto',
     fontWeight: '600',
     marginTop: 4,
+    textAlign: 'center',
+  },
+  activeTabLabel: {
+    color: Colors.primary[700],
+    fontSize: 12,
+  },
+  inactiveTabLabel: {
+    color: Colors.neutral[500],
+    fontSize: 11,
   }
 });

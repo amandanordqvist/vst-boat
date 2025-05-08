@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, ScrollView, Platform, Text, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ChevronDown } from 'lucide-react-native';
 import DashboardHeader from '@/components/DashboardHeader';
 import WeatherWidget from '@/components/WeatherWidget';
 import VesselStats from '@/components/VesselStats';
@@ -75,9 +76,11 @@ const vesselData = {
 };
 
 // Standardized corner radius for all elements
-const CORNER_RADIUS = 16;
+const CORNER_RADIUS = 20;
 // Standardized vertical spacing between sections
 const SECTION_SPACING = 24;
+// Tab bar height + extra safety margin
+const TAB_BAR_HEIGHT = Platform.OS === 'ios' ? 90 : 70;
 
 export default function DashboardScreen() {
   const insets = useSafeAreaInsets();
@@ -96,21 +99,42 @@ export default function DashboardScreen() {
         style={styles.scrollContainer}
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingBottom: 32 + (Platform.OS === 'ios' ? 100 : 80) }
+          { paddingBottom: TAB_BAR_HEIGHT + 24 } // Fixed bottom padding to prevent overlap
         ]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Full-width vessel card */}
-        <VesselOverview
-          name={vesselData.name}
-          type={vesselData.type}
-          status={vesselData.status}
-          location={vesselData.location}
-          image={vesselData.image}
-        />
+        {/* Vessel overview section */}
+        <View style={styles.vesselImageSection}>
+          <VesselOverview
+            name={vesselData.name}
+            type={vesselData.type}
+            status={vesselData.status}
+            location={vesselData.location}
+            image={vesselData.image}
+          />
+        </View>
         
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Current Conditions</Text>
+        {/* All remaining content with padding */}
+        <View style={styles.contentSection}>
+          {/* Scroll indicator */}
+          <View style={styles.scrollIndicator}>
+            <ChevronDown size={20} color={Colors.primary[400]} />
+          </View>
+          
+          <VesselStats 
+            fuelLevel={75}
+            engineHours={1250}
+            lastService="May 15, 2023"
+            nextService="Aug 15, 2023"
+          />
+          
+          {/* Section divider with heading */}
+          <View style={styles.sectionHeading}>
+            <View style={styles.headingLine} />
+            <Text style={styles.sectionTitle}>Current Conditions</Text>
+            <View style={styles.headingLine} />
+          </View>
+          
           <WeatherWidget 
             temperature={24}
             condition="Partly Cloudy"
@@ -119,30 +143,32 @@ export default function DashboardScreen() {
             humidity={65}
             iconUrl="https://cdn.weatherapi.com/weather/64x64/day/116.png"
           />
-        </View>
-        
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Vessel Status</Text>
-          <VesselStats 
-            fuelLevel={75}
-            engineHours={1250}
-            lastService="May 15, 2023"
-            nextService="Aug 15, 2023"
-          />
-        </View>
-        
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Maintenance</Text>
+          
+          {/* Section divider with heading */}
+          <View style={styles.sectionHeading}>
+            <View style={styles.headingLine} />
+            <Text style={styles.sectionTitle}>Maintenance</Text>
+            <View style={styles.headingLine} />
+          </View>
+          
           <MaintenanceAlerts alerts={maintenanceAlerts} />
-        </View>
-        
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Quick Actions</Text>
+          
+          {/* Section divider with heading */}
+          <View style={styles.sectionHeading}>
+            <View style={styles.headingLine} />
+            <Text style={styles.sectionTitle}>Quick Actions</Text>
+            <View style={styles.headingLine} />
+          </View>
+          
           <QuickActions />
-        </View>
-        
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Recent Activity</Text>
+          
+          {/* Section divider with heading */}
+          <View style={styles.sectionHeading}>
+            <View style={styles.headingLine} />
+            <Text style={styles.sectionTitle}>Recent Activity</Text>
+            <View style={styles.headingLine} />
+          </View>
+          
           <RecentActivity activities={recentActivities} />
         </View>
       </ScrollView>
@@ -160,17 +186,36 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingTop: 0, // No padding at top since vessel overview is full-width
-    paddingHorizontal: 16,
   },
-  sectionContainer: {
-    marginBottom: SECTION_SPACING, // Standardized vertical spacing
+  vesselImageSection: {
+    width: '100%',
+    overflow: 'hidden',
+  },
+  contentSection: {
+    paddingHorizontal: 16,
+    marginTop: -20, // Adjusted to match VesselStats marginTop
+  },
+  scrollIndicator: {
+    alignItems: 'center',
+    marginBottom: 8,
+    height: 20,
+  },
+  sectionHeading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 16,
+  },
+  headingLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: Colors.primary[300],
+    opacity: 0.5,
   },
   sectionTitle: {
     fontFamily: 'Poppins-SemiBold',
     fontSize: 18,
     color: Colors.primary[700],
-    marginBottom: 12,
-    marginLeft: 4,
+    marginHorizontal: 12,
     letterSpacing: 0.2, // Slight letter spacing for better readability
   },
 });

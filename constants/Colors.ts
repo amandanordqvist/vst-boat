@@ -1,26 +1,26 @@
 const Colors = {
   // Main theme colors
   primary: {
-    100: '#E5F2FF', // Light blue for secondary elements
-    200: '#C7E2FF',
-    300: '#A0CDFF',
-    400: '#6AAEF0',
-    500: '#3D7AB3', // Medium blue
-    600: '#2F6CA4',
-    700: '#1A5F9C', // Primary deep blue
-    800: '#124978',
-    900: '#0A3355',
+    100: '#E6EEF5', // Lightest navy tint
+    200: '#C7D8E8',
+    300: '#A4C1D7',
+    400: '#6A98C0',
+    500: '#3D6A9C', // Medium navy
+    600: '#2A5580',
+    700: '#1A406A', // Primary navy
+    800: '#132F52',
+    900: '#0A1F3A',
   },
   secondary: {
-    100: '#F2F8FF',
-    200: '#E5F2FF', // Light blue for secondary elements
-    300: '#C7E2FF',
-    400: '#A0CDFF',
-    500: '#6AAEF0',
-    600: '#3D7AB3',
-    700: '#2F6CA4',
-    800: '#1A5F9C',
-    900: '#124978',
+    100: '#EEF6FF',
+    200: '#E0EDFA', // Light navy for secondary elements
+    300: '#C0D7EA',
+    400: '#9BBAD5',
+    500: '#6A98C0',
+    600: '#3D6A9C',
+    700: '#2A5580',
+    800: '#1A406A',
+    900: '#132F52',
   },
   accent: {
     100: '#FFF5E5',
@@ -38,7 +38,7 @@ const Colors = {
     success: '#43A047', // Green for completed items
     warning: '#FF9500', // Orange for warnings
     error: '#E53935', // Red for critical alerts
-    info: '#1A5F9C', // Deep blue for information
+    info: '#1A406A', // Navy blue for information
   },
   // Neutral tones
   neutral: {
@@ -55,15 +55,15 @@ const Colors = {
   },
   // Special colors
   water: {
-    light: '#E5F2FF',
-    medium: '#6AAEF0',
-    deep: '#1A5F9C',
-    dark: '#124978',
+    light: '#E6EEF5',
+    medium: '#6A98C0',
+    deep: '#1A406A',
+    dark: '#132F52',
   },
   background: '#FFFFFF', // White for clean backgrounds
   card: 'rgba(255, 255, 255, 0.9)',
   text: '#1F2937',
-  border: '#E5F2FF', // Light blue for borders
+  border: '#E6EEF5', // Light navy for borders
 };
 
 export default Colors;

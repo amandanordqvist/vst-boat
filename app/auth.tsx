@@ -19,13 +19,15 @@ import {
 import { StatusBar } from 'expo-status-bar';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Phone, Shield, ChevronRight, Lock, User, ShieldCheck, Anchor, Users, Waves } from 'lucide-react-native';
+import { Phone, Shield, ChevronRight, Lock, User, ShieldCheck, Anchor, Users, Waves, QrCode } from 'lucide-react-native';
 import Colors from '@/constants/Colors';
 import { useAuth, UserRole } from '@/hooks/useAuth';
 import MaskedView from '@react-native-masked-view/masked-view';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing, withSpring, interpolate, Extrapolation } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width, height } = Dimensions.get('window');
+const isSmallScreen = height < 700;
 
 // Interface for animated input props
 interface AnimatedInputProps {
@@ -230,6 +232,7 @@ const RoleOption: React.FC<RoleOptionProps> = ({
 };
 
 export default function AuthScreen() {
+  const insets = useSafeAreaInsets();
   const { sendVerificationCode, verifyPhoneAndLogin, isLoading, isAuthenticated } = useAuth();
   const [phone, setPhone] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
@@ -237,6 +240,7 @@ export default function AuthScreen() {
   const [selectedRole, setSelectedRole] = useState<UserRole>('owner');
   const [step, setStep] = useState(1); // 1: Phone, 2: Verification, 3: New User Info
   const [isNewUser, setIsNewUser] = useState(false);
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
   
   // Animation values
   const formOpacity = useSharedValue(0);
@@ -360,6 +364,19 @@ export default function AuthScreen() {
         disabled={phone.length < 8}
         isLoading={isLoading}
       />
+
+      <View style={styles.dividerContainer}>
+        <View style={styles.divider} />
+        <Text style={styles.dividerText}>or</Text>
+        <View style={styles.divider} />
+      </View>
+      
+      <AnimatedButton
+        text="Scan QR Code"
+        icon={<QrCode size={20} color={Colors.primary[600]} />}
+        onPress={() => router.push('/boat-scanner?mode=login')}
+        secondary
+      />
     </Animated.View>
   );
 
@@ -466,14 +483,15 @@ export default function AuthScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <StatusBar style="light" />
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? (insets.bottom > 0 ? 20 : 40) : 0}
       >
         <LinearGradient
-          colors={['#124978', '#1A5F9C', '#2F6CA4']}
+          colors={[Colors.primary[900], Colors.primary[700], Colors.primary[500]]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.background}
@@ -485,16 +503,20 @@ export default function AuthScreen() {
           </View>
           
           <ScrollView
-            contentContainerStyle={styles.scrollContent}
+            contentContainerStyle={[
+              styles.scrollContent,
+              { paddingTop: Math.max(insets.top, 24), paddingBottom: Math.max(insets.bottom, 24) }
+            ]}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
+            bounces={false}
           >
-            <View style={styles.logoContainer}>
+            <View style={[styles.logoContainer, isSmallScreen && styles.logoContainerSmall]}>
               <MaskedView
-                style={styles.maskView}
+                style={[styles.maskView, isSmallScreen && styles.maskViewSmall]}
                 maskElement={
                   <View style={styles.maskContainer}>
-                    <Shield size={72} color="black" />
+                    <Shield size={isSmallScreen ? 60 : 72} color="black" />
                   </View>
                 }
               >
@@ -506,11 +528,11 @@ export default function AuthScreen() {
                 />
               </MaskedView>
               
-              <Text style={styles.appName}>VST Boat</Text>
-              <Text style={styles.tagline}>Your Complete Marine Experience</Text>
+              <Text style={[styles.appName, isSmallScreen && styles.appNameSmall]}>VST Boat</Text>
+              <Text style={[styles.tagline, isSmallScreen && styles.taglineSmall]}>Your Complete Marine Experience</Text>
             </View>
             
-            <Animated.View style={styles.formContainer}>
+            <Animated.View style={[styles.formContainer, isSmallScreen && styles.formContainerSmall]}>
               <LinearGradient
                 colors={['rgba(255, 255, 255, 0.95)', 'rgba(255, 255, 255, 0.98)']}
                 style={styles.formGradient}
@@ -521,7 +543,7 @@ export default function AuthScreen() {
           </ScrollView>
         </LinearGradient>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -562,16 +584,24 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
-    padding: 24,
+    paddingHorizontal: 24,
   },
   logoContainer: {
     alignItems: 'center',
     marginBottom: 40,
   },
+  logoContainerSmall: {
+    marginBottom: 24,
+  },
   maskView: {
     height: 72,
     width: 72,
     marginBottom: 20,
+  },
+  maskViewSmall: {
+    height: 60,
+    width: 60,
+    marginBottom: 12,
   },
   maskContainer: {
     flex: 1,
@@ -588,11 +618,18 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     marginBottom: 8,
   },
+  appNameSmall: {
+    fontSize: 28,
+    marginBottom: 4,
+  },
   tagline: {
     fontFamily: 'Poppins-Regular',
     fontSize: 16,
     color: '#E5F2FF',
     opacity: 0.9,
+  },
+  taglineSmall: {
+    fontSize: 14,
   },
   formContainer: {
     width: '100%',
@@ -606,12 +643,15 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     elevation: 10,
   },
+  formContainerSmall: {
+    borderRadius: 20,
+  },
   formGradient: {
     width: '100%',
     height: '100%',
   },
   formContent: {
-    padding: 28,
+    padding: Platform.OS === 'ios' ? (isSmallScreen ? 20 : 28) : 28,
   },
   formTitle: {
     fontFamily: 'Poppins-Bold',
@@ -635,7 +675,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderWidth: 1.5,
     borderColor: Colors.neutral[200],
-    height: 64,
+    height: isSmallScreen ? 56 : 64,
     shadowColor: Colors.primary[900],
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
@@ -644,9 +684,9 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    height: 60,
+    height: isSmallScreen ? 50 : 60,
     fontFamily: 'Poppins-Regular',
-    fontSize: 16,
+    fontSize: isSmallScreen ? 15 : 16,
     color: Colors.neutral[900],
     marginLeft: 12,
   },
@@ -661,7 +701,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: Colors.primary[600],
     borderRadius: 16,
-    paddingVertical: 18,
+    paddingVertical: isSmallScreen ? 14 : 18,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
@@ -708,7 +748,7 @@ const styles = StyleSheet.create({
   roleOption: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
+    paddingVertical: isSmallScreen ? 12 : 16,
     borderRadius: 16,
     backgroundColor: Colors.neutral[50],
     borderWidth: 1.5,
@@ -724,24 +764,40 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary[100],
   },
   roleIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: isSmallScreen ? 40 : 48,
+    height: isSmallScreen ? 40 : 48,
+    borderRadius: isSmallScreen ? 20 : 24,
     backgroundColor: Colors.neutral[200],
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 10,
+    marginBottom: isSmallScreen ? 8 : 10,
   },
   roleIconContainerSelected: {
     backgroundColor: Colors.primary[600],
   },
   roleText: {
     fontFamily: 'Poppins-Medium',
-    fontSize: 13,
+    fontSize: isSmallScreen ? 12 : 13,
     color: Colors.neutral[600],
   },
   roleTextSelected: {
     color: Colors.primary[600],
     fontFamily: 'Poppins-SemiBold',
+  },
+  dividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  divider: {
+    flex: 1,
+    height: 1,
+    backgroundColor: Colors.neutral[300],
+  },
+  dividerText: {
+    marginHorizontal: 12,
+    fontFamily: 'Poppins-Medium',
+    fontSize: 15,
+    color: Colors.neutral[600],
   },
 }); 

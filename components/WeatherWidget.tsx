@@ -1,8 +1,8 @@
 import React from 'react';
-import { View, Text, StyleSheet, Image, Platform } from 'react-native';
-import { MapPin, Wind, Droplets } from 'lucide-react-native';
+import { View, Text, StyleSheet, Image, Platform, TouchableOpacity } from 'react-native';
+import { MapPin, Wind, Droplets, ChevronRight } from 'lucide-react-native';
 import Colors from '@/constants/Colors';
-import { LinearGradient } from 'expo-linear-gradient';
+import { router } from 'expo-router';
 
 interface WeatherWidgetProps {
   temperature: number;
@@ -21,17 +21,18 @@ export default function WeatherWidget({
   humidity, 
   iconUrl 
 }: WeatherWidgetProps) {
+  const handleViewForecast = () => {
+    // Navigate to forecast screen when implemented
+    // router.push('/(tabs)/weather');
+    console.log('View forecast');
+  };
+
   return (
-    <LinearGradient
-      colors={[Colors.primary[600], Colors.primary[700]]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={styles.container}
-    >
+    <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Weather Conditions</Text>
         <View style={styles.locationContainer}>
-          <MapPin size={14} color="#FFFFFF" />
+          <MapPin size={14} color={Colors.primary[600]} />
           <Text style={styles.location}>{location}</Text>
         </View>
       </View>
@@ -49,24 +50,33 @@ export default function WeatherWidget({
       
       <View style={styles.weatherDetails}>
         <View style={styles.detailItem}>
-          <Wind size={16} color="#FFFFFF" />
+          <Wind size={16} color="#fff" />
           <Text style={styles.detailText}>{windSpeed} kn</Text>
         </View>
         <View style={styles.divider} />
         <View style={styles.detailItem}>
-          <Droplets size={16} color="#FFFFFF" />
+          <Droplets size={16} color="#fff" />
           <Text style={styles.detailText}>{humidity}%</Text>
         </View>
       </View>
-    </LinearGradient>
+      
+      <TouchableOpacity 
+        style={styles.forecastLink}
+        onPress={handleViewForecast}
+        activeOpacity={0.7}
+      >
+        <Text style={styles.forecastText}>View Forecast</Text>
+        <ChevronRight size={16} color={Colors.primary[600]} />
+      </TouchableOpacity>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 12,
+    borderRadius: 20,
     padding: 16,
-    marginHorizontal: 16,
+    backgroundColor: Colors.background,
     marginBottom: 16,
     overflow: 'hidden',
     shadowColor: '#000',
@@ -82,9 +92,9 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   title: {
-    color: '#FFFFFF',
+    color: Colors.neutral[900],
     fontFamily: Platform.OS === 'ios' ? 'San Francisco' : 'Roboto',
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
   },
   locationContainer: {
@@ -92,11 +102,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   location: {
-    color: '#FFFFFF',
+    color: Colors.neutral[600],
     fontFamily: Platform.OS === 'ios' ? 'San Francisco' : 'Roboto',
     fontSize: 12,
     marginLeft: 4,
-    opacity: 0.8,
   },
   weatherInfo: {
     flexDirection: 'row',
@@ -108,17 +117,16 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
   },
   temperature: {
-    color: '#FFFFFF',
+    color: Colors.primary[700],
     fontFamily: Platform.OS === 'ios' ? 'San Francisco' : 'Roboto',
     fontSize: 36,
     fontWeight: '700',
   },
   condition: {
-    color: '#FFFFFF',
+    color: Colors.neutral[700],
     fontFamily: Platform.OS === 'ios' ? 'San Francisco' : 'Roboto',
     fontSize: 14,
     lineHeight: 20,
-    opacity: 0.8,
   },
   weatherIcon: {
     width: 64,
@@ -126,7 +134,7 @@ const styles = StyleSheet.create({
   },
   weatherDetails: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    backgroundColor: Colors.primary[600],
     borderRadius: 12,
     padding: 12,
     justifyContent: 'space-around',
@@ -145,5 +153,21 @@ const styles = StyleSheet.create({
   divider: {
     width: 1,
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  forecastLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    marginTop: 12,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: Colors.secondary[200],
+  },
+  forecastText: {
+    color: Colors.primary[600],
+    fontFamily: Platform.OS === 'ios' ? 'San Francisco' : 'Roboto',
+    fontSize: 14,
+    fontWeight: '500',
+    marginRight: 4,
   },
 });

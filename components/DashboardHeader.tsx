@@ -1,10 +1,9 @@
 import React from 'react';
 import { View, Text, StyleSheet, Platform, TouchableOpacity, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Heart, MessageCircle, Bell, Anchor, ChevronRight } from 'lucide-react-native';
+import { Bell, ChevronRight, Search, ChevronDown, MapPin } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '@/constants/Colors';
-import { BlurView } from 'expo-blur';
 import { router } from 'expo-router';
 import useProfileNavigation from '@/hooks/useProfileNavigation';
 
@@ -15,6 +14,10 @@ interface DashboardHeaderProps {
   vesselStatus?: string;
   vesselLocation?: string;
 }
+
+// Consistent design values
+const BORDER_RADIUS = 20;
+const ICON_SIZE = 22;
 
 export default function DashboardHeader({ 
   username, 
@@ -44,6 +47,7 @@ export default function DashboardHeader({
               <TouchableOpacity 
                 onPress={navigateToProfile}
                 activeOpacity={0.8}
+                style={styles.avatarContainer}
               >
                 <Image 
                   source={{ uri: 'https://randomuser.me/api/portraits/men/32.jpg' }}
@@ -58,10 +62,10 @@ export default function DashboardHeader({
             
             <View style={styles.iconContainer}>
               <TouchableOpacity style={styles.iconWrapper}>
-                <MessageCircle color="#fff" size={22} />
+                <Search color="#fff" size={20} />
               </TouchableOpacity>
-              <TouchableOpacity style={styles.notificationWrapper}>
-                <Bell color="#fff" size={22} />
+              <TouchableOpacity style={styles.iconWrapper}>
+                <Bell color="#fff" size={20} />
                 {notifications > 0 && (
                   <View style={styles.notificationBadge}>
                     <Text style={styles.notificationText}>{notifications}</Text>
@@ -71,26 +75,40 @@ export default function DashboardHeader({
             </View>
           </View>
           
-          <TouchableOpacity 
-            style={styles.vesselStripContainer} 
-            onPress={handleVesselPress}
-            activeOpacity={0.8}
-          >
-            <View style={styles.vesselStripContent}>
-              <View style={styles.vesselIcon}>
-                <Anchor size={16} color="#FFF" />
+          <View style={styles.vesselSelectorWrapper}>
+            <View style={styles.vesselSelector}>
+              <View style={styles.vesselInfo}>
+                <TouchableOpacity 
+                  style={styles.vesselNameContainer}
+                  onPress={handleVesselPress}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.vesselName}>{vesselName}</Text>
+                  <ChevronDown size={14} color="rgba(255, 255, 255, 0.7)" style={styles.dropdownIcon} />
+                </TouchableOpacity>
+                {vesselLocation && (
+                  <View style={styles.locationContainer}>
+                    <MapPin size={12} color="rgba(255, 255, 255, 0.6)" />
+                    <Text style={styles.locationText}>{vesselLocation}</Text>
+                  </View>
+                )}
               </View>
-              <Text style={styles.vesselText}>
-                {vesselName} • {vesselStatus} at {vesselLocation}
-              </Text>
-              <View style={styles.chevronContainer}>
-                <Text style={styles.viewDetailsText}>View Details</Text>
-                <ChevronRight size={16} color="#FFF" style={styles.chevron} />
-              </View>
+              
+              <TouchableOpacity 
+                style={styles.detailsButton}
+                onPress={handleVesselPress}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.detailsText}>Details</Text>
+                <ChevronRight size={14} color="rgba(255, 255, 255, 0.7)" />
+              </TouchableOpacity>
             </View>
-          </TouchableOpacity>
+            <View style={styles.separator} />
+          </View>
         </SafeAreaView>
       </LinearGradient>
+      
+      <View style={styles.bottomCurve} />
     </View>
   );
 }
@@ -113,26 +131,33 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingTop: 8,
+    paddingTop: 12,
     paddingBottom: 16,
   },
   userInfoContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
+  avatarContainer: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
+  },
   avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     marginRight: 12,
     borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.7)',
+    borderColor: 'rgba(255, 255, 255, 0.8)',
   },
   userInfo: {
     flexDirection: 'column',
   },
   greeting: {
-    color: '#E5F2FF',
+    color: 'rgba(255, 255, 255, 0.8)',
     fontFamily: Platform.OS === 'ios' ? 'San Francisco' : 'Roboto',
     fontSize: 14,
     fontWeight: '400',
@@ -142,6 +167,7 @@ const styles = StyleSheet.create({
     fontFamily: Platform.OS === 'ios' ? 'San Francisco' : 'Roboto',
     fontSize: 20,
     fontWeight: '600',
+    letterSpacing: 0.2,
   },
   iconContainer: {
     flexDirection: 'row',
@@ -150,43 +176,24 @@ const styles = StyleSheet.create({
   iconWrapper: {
     width: 42,
     height: 42,
-    borderRadius: 21,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    marginLeft: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    elevation: 3,
-  },
-  notificationWrapper: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    marginLeft: 10,
+    borderRadius: BORDER_RADIUS,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    marginLeft: 12,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    elevation: 3,
   },
   notificationBadge: {
     position: 'absolute',
-    right: 6,
-    top: 6,
+    right: 8,
+    top: 8,
     backgroundColor: '#E53935',
     borderRadius: 10,
     minWidth: 18,
     height: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 4,
+    paddingHorizontal: 3,
     borderWidth: 1.5,
     borderColor: '#FFFFFF',
   },
@@ -196,52 +203,68 @@ const styles = StyleSheet.create({
     fontFamily: Platform.OS === 'ios' ? 'San Francisco' : 'Roboto',
     fontWeight: '600',
   },
-  vesselStripContainer: {
+  vesselSelectorWrapper: {
     paddingHorizontal: 16,
-    paddingBottom: 16,
+    paddingBottom: 14,
+    marginTop: 8,
   },
-  vesselStripContent: {
+  vesselSelector: {
     flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    borderRadius: 24,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-  },
-  vesselIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: Colors.primary[700],
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 8,
-  },
-  vesselText: {
-    flex: 1,
-    color: '#FFFFFF',
-    fontFamily: Platform.OS === 'ios' ? 'San Francisco' : 'Roboto',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  chevronContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 16,
-    paddingHorizontal: 8,
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
     paddingVertical: 4,
   },
-  viewDetailsText: {
+  vesselInfo: {
+    flexDirection: 'column',
+  },
+  vesselNameContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  dropdownIcon: {
+    marginLeft: 6,
+  },
+  vesselName: {
     color: '#FFFFFF',
+    fontFamily: Platform.OS === 'ios' ? 'San Francisco' : 'Roboto',
+    fontSize: 20,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+  },
+  locationContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 2,
+  },
+  locationText: {
+    color: 'rgba(255, 255, 255, 0.6)',
+    fontFamily: Platform.OS === 'ios' ? 'San Francisco' : 'Roboto',
     fontSize: 12,
+    marginLeft: 4,
+  },
+  detailsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  detailsText: {
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 14,
     fontFamily: Platform.OS === 'ios' ? 'San Francisco' : 'Roboto',
     fontWeight: '500',
     marginRight: 4,
   },
-  chevron: {
-    opacity: 0.8,
+  separator: {
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    marginTop: 10,
+  },
+  bottomCurve: {
+    height: 12,
+    backgroundColor: Colors.secondary[100],
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    marginTop: -12,
+    zIndex: 1,
   },
 });
