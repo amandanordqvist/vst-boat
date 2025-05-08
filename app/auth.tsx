@@ -14,12 +14,14 @@ import {
   ActivityIndicator,
   Alert,
   ColorValue,
-  TextInputProps
+  TextInputProps,
+  Pressable,
+  Keyboard
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Phone, Shield, ChevronRight, Lock, User, ShieldCheck, Anchor, Users, Waves, QrCode } from 'lucide-react-native';
+import { Phone, Shield, ChevronRight, Lock, User, ShieldCheck, Anchor, Users, Waves, QrCode, Info, ChevronDown } from 'lucide-react-native';
 import Colors from '@/constants/Colors';
 import { useAuth, UserRole } from '@/hooks/useAuth';
 import MaskedView from '@react-native-masked-view/masked-view';
@@ -28,6 +30,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width, height } = Dimensions.get('window');
 const isSmallScreen = height < 700;
+
+// Add this responsive scaling function
+const scale = (size: number, factor = 0.3) => {
+  return size + (isSmallScreen ? -size * factor : 21);
+};
 
 // Interface for animated input props
 interface AnimatedInputProps {
@@ -172,10 +179,10 @@ const AnimatedButton: React.FC<AnimatedButtonProps> = ({
         {isLoading ? (
           <ActivityIndicator color={secondary ? Colors.primary[600] : "#FFFFFF"} size="small" />
         ) : (
-          <>
+          <View style={styles.buttonContent}>
             <Text style={[styles.buttonText, secondary && styles.secondaryButtonText]}>{text}</Text>
-            {icon}
-          </>
+            {icon && <View style={styles.buttonIconContainer}>{icon}</View>}
+          </View>
         )}
       </TouchableOpacity>
     </Animated.View>
@@ -231,6 +238,111 @@ const RoleOption: React.FC<RoleOptionProps> = ({
   );
 };
 
+// Country code type
+interface CountryCode {
+  code: string;
+  flag: string;
+  name: string;
+}
+
+const COUNTRY_CODES: CountryCode[] = [
+  { code: "+1", flag: "🇺🇸", name: "United States" },
+  { code: "+44", flag: "🇬🇧", name: "United Kingdom" },
+  { code: "+46", flag: "🇸🇪", name: "Sweden" },
+  { code: "+47", flag: "🇳🇴", name: "Norway" },
+  { code: "+45", flag: "🇩🇰", name: "Denmark" },
+  { code: "+49", flag: "🇩🇪", name: "Germany" },
+  { code: "+33", flag: "🇫🇷", name: "France" },
+];
+
+// Modify the AnimatedPhoneInput component to match the screenshot
+const AnimatedPhoneInput: React.FC<{
+  value: string;
+  onChangeText: (text: string) => void;
+  autoFocus?: boolean;
+}> = ({ value, onChangeText, autoFocus }) => {
+  const isFocused = useSharedValue(0);
+  const [isCountryPickerOpen, setIsCountryPickerOpen] = useState(false);
+  const [selectedCountry, setSelectedCountry] = useState(COUNTRY_CODES[2]); // Sweden by default
+  
+  const containerStyle = useAnimatedStyle(() => {
+    const borderColorValue = interpolate(
+      isFocused.value,
+      [0, 1],
+      [0, 1]
+    );
+    
+    return {
+      borderColor: borderColorValue === 0 ? Colors.neutral[200] : Colors.primary[400],
+      transform: [{ scale: interpolate(
+        isFocused.value,
+        [0, 1],
+        [1, 1.01],
+        Extrapolation.CLAMP
+      )}]
+    };
+  });
+  
+  const handleFocus = () => {
+    isFocused.value = withTiming(1, { duration: 200 });
+  };
+  
+  const handleBlur = () => {
+    isFocused.value = withTiming(0, { duration: 200 });
+  };
+
+  const handleSelectCountry = (country: CountryCode) => {
+    setSelectedCountry(country);
+    setIsCountryPickerOpen(false);
+  };
+  
+  return (
+    <>
+      <Animated.View style={[styles.inputContainer, containerStyle]}>
+        <View style={styles.countryCodeSelector}>
+          <Phone color={Colors.primary[600]} size={20} style={{marginRight: 8}} />
+          <Text style={styles.countryFlag}>{selectedCountry.flag}</Text>
+          <TouchableOpacity 
+            style={styles.countryCodeButton}
+            onPress={() => setIsCountryPickerOpen(!isCountryPickerOpen)}
+          >
+            <Text style={styles.countryCode}>{selectedCountry.code}</Text>
+            <ChevronDown size={14} color={Colors.neutral[500]} />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.inputDivider} />
+        <TextInput
+          style={styles.phoneInput}
+          placeholder="XXX XXX XXXX"
+          placeholderTextColor={Colors.neutral[400]}
+          value={value.replace(selectedCountry.code, '')}
+          onChangeText={(text) => onChangeText(selectedCountry.code + text)}
+          keyboardType="phone-pad"
+          autoFocus={autoFocus}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+        />
+      </Animated.View>
+      
+      {isCountryPickerOpen && (
+        <View style={styles.countryPickerContainer}>
+          {COUNTRY_CODES.map((country) => (
+            <TouchableOpacity
+              key={country.code}
+              style={styles.countryPickerItem}
+              onPress={() => handleSelectCountry(country)}
+            >
+              <Text style={styles.countryFlag}>{country.flag}</Text>
+              <Text style={styles.countryName}>{country.name}</Text>
+              <Text style={styles.countryCode}>{country.code}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+    </>
+  );
+};
+
 export default function AuthScreen() {
   const insets = useSafeAreaInsets();
   const { sendVerificationCode, verifyPhoneAndLogin, isLoading, isAuthenticated } = useAuth();
@@ -246,6 +358,22 @@ export default function AuthScreen() {
   const formOpacity = useSharedValue(0);
   const formTranslateY = useSharedValue(50);
   
+  // Add keyboard listener to adjust UI when keyboard appears
+  useEffect(() => {
+    const keyboardDidShowListener = Platform.OS === 'ios' ? 
+      Keyboard.addListener('keyboardWillShow', () => setKeyboardOpen(true)) :
+      Keyboard.addListener('keyboardDidShow', () => setKeyboardOpen(true));
+      
+    const keyboardDidHideListener = Platform.OS === 'ios' ? 
+      Keyboard.addListener('keyboardWillHide', () => setKeyboardOpen(false)) :
+      Keyboard.addListener('keyboardDidHide', () => setKeyboardOpen(false));
+
+    return () => {
+      keyboardDidShowListener.remove();
+      keyboardDidHideListener.remove();
+    };
+  }, []);
+
   useEffect(() => {
     // Animate form entrance
     formOpacity.value = withTiming(1, { duration: 500 });
@@ -345,17 +473,29 @@ export default function AuthScreen() {
 
   const renderPhoneInput = () => (
     <Animated.View style={[styles.formContent, formAnimatedStyle]}>
+      {!keyboardOpen && (
+        <View style={styles.boatIllustrationContainer}>
+          <LinearGradient
+            colors={[Colors.primary[100], Colors.primary[200]]}
+            style={styles.boatIllustrationGradient}
+          >
+            <Anchor color={Colors.primary[700]} size={scale(48)} />
+          </LinearGradient>
+        </View>
+      )}
+      
       <Text style={styles.formTitle}>Let's get started</Text>
       <Text style={styles.formSubtitle}>Enter your phone number to continue</Text>
       
-      <AnimatedInput
-        icon={<Phone color={Colors.primary[600]} size={22} />}
-        placeholder="+46 70 123 4567"
+      <AnimatedPhoneInput
         value={phone}
         onChangeText={handlePhoneChange}
-        keyboardType="phone-pad"
         autoFocus
       />
+      
+      <Text style={styles.privacyText}>
+        We'll send a verification code to this number. Standard message rates may apply.
+      </Text>
       
       <AnimatedButton
         text="Continue"
@@ -371,12 +511,29 @@ export default function AuthScreen() {
         <View style={styles.divider} />
       </View>
       
-      <AnimatedButton
-        text="Scan QR Code"
-        icon={<QrCode size={20} color={Colors.primary[600]} />}
+      <TouchableOpacity 
+        style={styles.qrCodeContainer}
         onPress={() => router.push('/boat-scanner?mode=login')}
-        secondary
-      />
+      >
+        <View style={styles.qrCodeIconContainer}>
+          <QrCode size={22} color={Colors.primary[600]} />
+        </View>
+        <View style={styles.qrTextContainer}>
+          <Text style={styles.qrCodeTitle}>Scan QR Code</Text>
+          <Text style={styles.qrCodeDescription}>
+            Quick login by scanning your vessel's QR code
+          </Text>
+        </View>
+        <View style={styles.qrArrowContainer}>
+          <ChevronRight size={18} color={Colors.primary[500]} />
+        </View>
+      </TouchableOpacity>
+
+      <Text style={styles.learnMoreText}>
+        <Text style={styles.learnMoreLink} onPress={() => console.log('Learn more pressed')}>
+          Learn more
+        </Text> about VST Boat
+      </Text>
     </Animated.View>
   );
 
@@ -505,34 +662,46 @@ export default function AuthScreen() {
           <ScrollView
             contentContainerStyle={[
               styles.scrollContent,
-              { paddingTop: Math.max(insets.top, 24), paddingBottom: Math.max(insets.bottom, 24) }
+              { 
+                paddingBottom: Math.max(insets.bottom, 24),
+                justifyContent: keyboardOpen ? 'flex-start' : 'center',
+                paddingTop: keyboardOpen ? Math.max(insets.top + 20, 44) : Math.max(insets.top, 24)
+              }
             ]}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
             bounces={false}
           >
-            <View style={[styles.logoContainer, isSmallScreen && styles.logoContainerSmall]}>
-              <MaskedView
-                style={[styles.maskView, isSmallScreen && styles.maskViewSmall]}
-                maskElement={
-                  <View style={styles.maskContainer}>
-                    <Shield size={isSmallScreen ? 60 : 72} color="black" />
-                  </View>
-                }
-              >
-                <LinearGradient
-                  colors={['#6AAEF0', '#3D7AB3', '#FFFFFF']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.gradientLogo}
-                />
-              </MaskedView>
-              
-              <Text style={[styles.appName, isSmallScreen && styles.appNameSmall]}>VST Boat</Text>
-              <Text style={[styles.tagline, isSmallScreen && styles.taglineSmall]}>Your Complete Marine Experience</Text>
-            </View>
+            {!keyboardOpen && (
+              <View style={[styles.logoContainer, isSmallScreen && styles.logoContainerSmall]}>
+                <View style={styles.logoWrapper}>
+                  <MaskedView
+                    style={[styles.maskView, isSmallScreen && styles.maskViewSmall]}
+                    maskElement={
+                      <View style={styles.maskContainer}>
+                        <Shield size={isSmallScreen ? 60 : 72} color="black" />
+                      </View>
+                    }
+                  >
+                    <LinearGradient
+                      colors={['#6AAEF0', '#3D7AB3', '#FFFFFF']}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={styles.gradientLogo}
+                    />
+                  </MaskedView>
+                  
+                  <Text style={[styles.appName, isSmallScreen && styles.appNameSmall]}>VST Boat</Text>
+                  <Text style={[styles.tagline, isSmallScreen && styles.taglineSmall]}>Your Complete Marine Experience</Text>
+                </View>
+              </View>
+            )}
             
-            <Animated.View style={[styles.formContainer, isSmallScreen && styles.formContainerSmall]}>
+            <Animated.View style={[
+              styles.formContainer, 
+              isSmallScreen && styles.formContainerSmall,
+              keyboardOpen && styles.formContainerKeyboard
+            ]}>
               <LinearGradient
                 colors={['rgba(255, 255, 255, 0.95)', 'rgba(255, 255, 255, 0.98)']}
                 style={styles.formGradient}
@@ -584,17 +753,24 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
-    paddingHorizontal: 24,
+    paddingHorizontal: Math.min(24, width * 0.06), // Responsive horizontal padding
   },
   logoContainer: {
+    width: '100%',
     alignItems: 'center',
     marginBottom: 40,
+    paddingHorizontal: 20,
   },
   logoContainerSmall: {
     marginBottom: 24,
   },
+  logoWrapper: {
+    width: '80%',
+    alignItems: 'center',
+    paddingVertical: 10,
+  },
   maskView: {
-    height: 72,
+    height: 170,
     width: 72,
     marginBottom: 20,
   },
@@ -614,22 +790,24 @@ const styles = StyleSheet.create({
   },
   appName: {
     fontFamily: 'Poppins-Bold',
-    fontSize: 32,
+    fontSize: Math.min(32, width * 0.08), // Responsive font size
     color: '#FFFFFF',
     marginBottom: 8,
+    textAlign: 'center',
   },
   appNameSmall: {
-    fontSize: 28,
+    fontSize: Math.min(28, width * 0.07),
     marginBottom: 4,
   },
   tagline: {
     fontFamily: 'Poppins-Regular',
-    fontSize: 16,
+    fontSize: Math.min(16, width * 0.04),
     color: '#E5F2FF',
     opacity: 0.9,
+    textAlign: 'center',
   },
   taglineSmall: {
-    fontSize: 14,
+    fontSize: Math.min(14, width * 0.035),
   },
   formContainer: {
     width: '100%',
@@ -646,24 +824,28 @@ const styles = StyleSheet.create({
   formContainerSmall: {
     borderRadius: 20,
   },
+  formContainerKeyboard: {
+    marginTop: 20,
+    maxHeight: height * 0.8,
+  },
   formGradient: {
     width: '100%',
     height: '100%',
   },
   formContent: {
-    padding: Platform.OS === 'ios' ? (isSmallScreen ? 20 : 28) : 28,
+    padding: 24,
   },
   formTitle: {
     fontFamily: 'Poppins-Bold',
-    fontSize: 28,
+    fontSize: 32,
     color: Colors.neutral[900],
-    marginBottom: 10,
+    marginBottom: 6,
   },
   formSubtitle: {
     fontFamily: 'Poppins-Regular',
-    fontSize: 15,
+    fontSize: 16,
     color: Colors.neutral[600],
-    marginBottom: 28,
+    marginBottom: 24,
     lineHeight: 22,
   },
   inputContainer: {
@@ -671,49 +853,56 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: Colors.neutral[50],
     borderRadius: 16,
-    marginBottom: 24,
+    marginBottom: 16,
     paddingHorizontal: 16,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: Colors.neutral[200],
-    height: isSmallScreen ? 56 : 64,
-    shadowColor: Colors.primary[900],
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    elevation: 2,
+    height: 56,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   input: {
     flex: 1,
-    height: isSmallScreen ? 50 : 60,
+    height: 50,
     fontFamily: 'Poppins-Regular',
-    fontSize: isSmallScreen ? 15 : 16,
+    fontSize: 15,
     color: Colors.neutral[900],
-    marginLeft: 12,
+    paddingLeft: 6,
   },
   buttonShadow: {
     shadowColor: Colors.primary[800],
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
   },
   primaryButton: {
-    flexDirection: 'row',
-    backgroundColor: Colors.primary[600],
+    backgroundColor: '#6B8598', // This matches the screenshot's button color better
     borderRadius: 16,
-    paddingVertical: isSmallScreen ? 14 : 18,
+    paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
+    width: '100%',
   },
   disabledButton: {
     opacity: 0.6,
+  },
+  buttonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   buttonText: {
     fontFamily: 'Poppins-SemiBold',
     fontSize: 16,
     color: '#FFFFFF',
-    marginRight: 8,
+  },
+  buttonIconContainer: {
+    marginLeft: 8,
   },
   secondaryButton: {
     paddingVertical: 14,
@@ -787,7 +976,7 @@ const styles = StyleSheet.create({
   dividerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 16,
   },
   divider: {
     flex: 1,
@@ -798,6 +987,140 @@ const styles = StyleSheet.create({
     marginHorizontal: 12,
     fontFamily: 'Poppins-Medium',
     fontSize: 15,
+    color: Colors.neutral[500],
+  },
+  boatIllustrationContainer: {
+    width: '100%',
+    height: 100,
+    marginBottom: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  boatIllustrationGradient: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  privacyText: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 13,
+    color: Colors.neutral[500],
+    marginBottom: 24,
+    lineHeight: 18,
+  },
+  countryCodeSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  countryCodeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 4,
+  },
+  countryFlag: {
+    fontSize: 18,
+  },
+  countryCode: {
+    fontFamily: 'Poppins-Medium',
+    fontSize: 15,
+    color: Colors.neutral[700],
+    marginRight: 4,
+  },
+  inputDivider: {
+    width: 1,
+    height: '60%',
+    backgroundColor: Colors.neutral[300],
+    marginHorizontal: 8,
+  },
+  phoneInput: {
+    flex: 1,
+    height: 50,
+    fontFamily: 'Poppins-Regular',
+    fontSize: 15,
+    color: Colors.neutral[900],
+    paddingLeft: 6,
+  },
+  countryPickerContainer: {
+    backgroundColor: Colors.background,
+    borderRadius: 12,
+    marginTop: -16,
+    marginBottom: 16,
+    padding: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+    maxHeight: 200,
+  },
+  countryPickerItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+  },
+  countryName: {
+    flex: 1,
+    fontFamily: 'Inter-Regular',
+    fontSize: 14,
+    color: Colors.neutral[800],
+    marginLeft: 8,
+  },
+  qrCodeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.primary[100],
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 20,
+  },
+  qrCodeIconContainer: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: 'rgba(255,255,255,0.8)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  qrTextContainer: {
+    flex: 1,
+  },
+  qrCodeTitle: {
+    fontFamily: 'Poppins-Medium',
+    fontSize: 15,
+    color: Colors.primary[700],
+    marginBottom: 2,
+  },
+  qrCodeDescription: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 13,
+    color: Colors.primary[600],
+    lineHeight: 18,
+  },
+  qrArrowContainer: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  learnMoreText: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 14,
     color: Colors.neutral[600],
+    textAlign: 'center',
+  },
+  learnMoreLink: {
+    fontFamily: 'Inter-Medium',
+    color: Colors.primary[600],
   },
 }); 
