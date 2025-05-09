@@ -72,12 +72,22 @@ const AnimatedInput: React.FC<AnimatedInputProps> = ({
     
     return {
       borderColor: borderColorValue === 0 ? Colors.neutral[200] : Colors.primary[400],
+      backgroundColor: interpolate(
+        isFocused.value,
+        [0, 1],
+        [Colors.neutral[50], Colors.primary[50]]
+      ),
       transform: [{ scale: interpolate(
         isFocused.value,
         [0, 1],
-        [1, 1.02],
+        [1, 1.01],
         Extrapolation.CLAMP
-      )}]
+      )}],
+      shadowOpacity: interpolate(
+        isFocused.value,
+        [0, 1],
+        [0.05, 0.1]
+      )
     };
   });
   
@@ -91,7 +101,7 @@ const AnimatedInput: React.FC<AnimatedInputProps> = ({
       transform: [{ scale: interpolate(
         isFocused.value,
         [0, 1],
-        [1, 1.1],
+        [1, 1.05],
         Extrapolation.CLAMP
       )}]
     };
@@ -148,19 +158,23 @@ const AnimatedButton: React.FC<AnimatedButtonProps> = ({
   secondary = false 
 }) => {
   const scale = useSharedValue(1);
+  const opacity = useSharedValue(1);
   
   const buttonStyle = useAnimatedStyle(() => {
     return {
-      transform: [{ scale: scale.value }]
+      transform: [{ scale: scale.value }],
+      opacity: disabled ? 0.7 : opacity.value
     };
   });
   
   const handlePressIn = () => {
     scale.value = withTiming(0.97, { duration: 100 });
+    opacity.value = withTiming(0.9, { duration: 100 });
   };
   
   const handlePressOut = () => {
     scale.value = withTiming(1, { duration: 200 });
+    opacity.value = withTiming(1, { duration: 200 });
   };
   
   return (
@@ -274,12 +288,22 @@ const AnimatedPhoneInput: React.FC<{
     
     return {
       borderColor: borderColorValue === 0 ? Colors.neutral[200] : Colors.primary[400],
+      backgroundColor: interpolate(
+        isFocused.value,
+        [0, 1],
+        [Colors.neutral[50], Colors.primary[50]]
+      ),
       transform: [{ scale: interpolate(
         isFocused.value,
         [0, 1],
         [1, 1.01],
         Extrapolation.CLAMP
-      )}]
+      )}],
+      shadowOpacity: interpolate(
+        isFocused.value,
+        [0, 1],
+        [0.05, 0.1]
+      )
     };
   });
   
@@ -289,6 +313,8 @@ const AnimatedPhoneInput: React.FC<{
   
   const handleBlur = () => {
     isFocused.value = withTiming(0, { duration: 200 });
+    // Auto-close country picker when input loses focus
+    setIsCountryPickerOpen(false);
   };
 
   const handleSelectCountry = (country: CountryCode) => {
@@ -325,11 +351,17 @@ const AnimatedPhoneInput: React.FC<{
       </Animated.View>
       
       {isCountryPickerOpen && (
-        <View style={styles.countryPickerContainer}>
+        <Animated.View 
+          entering={Animated.FadeInDown}
+          style={styles.countryPickerContainer}
+        >
           {COUNTRY_CODES.map((country) => (
             <TouchableOpacity
               key={country.code}
-              style={styles.countryPickerItem}
+              style={[
+                styles.countryPickerItem,
+                selectedCountry.code === country.code && styles.countryPickerItemSelected
+              ]}
               onPress={() => handleSelectCountry(country)}
             >
               <Text style={styles.countryFlag}>{country.flag}</Text>
@@ -337,7 +369,7 @@ const AnimatedPhoneInput: React.FC<{
               <Text style={styles.countryCode}>{country.code}</Text>
             </TouchableOpacity>
           ))}
-        </View>
+        </Animated.View>
       )}
     </>
   );

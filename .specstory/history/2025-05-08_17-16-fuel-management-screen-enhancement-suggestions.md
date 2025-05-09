@@ -3641,3 +3641,209 @@ Is there anything else about this scaling approach you'd like me to adjust? Or w
 
 ---
 
+_**User**_
+
+how can i send this to be a expo go update 
+
+---
+
+_**Assistant**_
+
+
+
+---
+
+To publish your VST Boat app as an update to Expo Go, follow these steps:
+
+1. First, make sure all your changes are saved and committed
+
+2. Run the publish command:
+```
+npx expo publish
+```
+
+This will:
+- Bundle your app's JavaScript code and assets
+- Upload them to Expo's servers
+- Make them available to anyone who has access to your Expo project
+
+3. If you haven't logged in to Expo CLI yet, you'll be prompted to do so:
+```
+npx expo login
+```
+
+4. After publishing, you'll receive a URL that users can use to open your app in Expo Go
+
+5. Users who already have your app in Expo Go will automatically receive the update when they open the app (as long as they have an internet connection)
+
+If you want to publish to a specific release channel (like staging or production):
+```
+npx expo publish --release-channel production
+```
+
+To test your update before publishing:
+```
+npx expo start
+```
+
+Then open the app in Expo Go on your device by scanning the QR code in the terminal.
+
+---
+
+_**User**_
+
+please fix 
+
+---
+
+_**Assistant**_
+
+
+
+---
+
+Let me fix the error in your location screen:
+
+---
+
+Read file: app/(tabs)/location.tsx
+
+---
+
+Let me check if we have more specific lines available:
+
+---
+
+<details>
+            <summary>Grep search for "import.*react-native-maps" • **1** files</summary>
+        
+| File | Line | Match |
+|------|------|-------|
+| `file:///Users/amandanordqvisted/vst-boat/app/%28tabs%29/location.tsx` | L82 | `// Dynamic import for react-native-maps` |
+| `file:///Users/amandanordqvisted/vst-boat/app/%28tabs%29/location.tsx` | L91 | `const maps = await import('react-native-maps');` |
+
+</details>
+
+---
+
+<details>
+            <summary>Grep search for "extends Component" • **0** files</summary>
+        
+No results found
+</details>
+
+---
+
+Now I'll fix the dynamic import issue in the location screen:
+
+---
+
+```diff
+  
+  const { width } = Dimensions.get('window');
++ 
++ // Import MapView directly when not on web
++ let MapView: any = null;
++ let Marker: any = null;
++ let Callout: any = null;
++ let PROVIDER_GOOGLE: any = null;
++ 
++ // Pre-load the map components if not on web
++ if (Platform.OS !== 'web') {
++   try {
++     // Use require instead of dynamic import for better compatibility
++     const ReactNativeMaps = require('react-native-maps');
++     MapView = ReactNativeMaps.default;
++     Marker = ReactNativeMaps.Marker;
++     Callout = ReactNativeMaps.Callout;
++     PROVIDER_GOOGLE = ReactNativeMaps.PROVIDER_GOOGLE;
++   } catch (error) {
++     console.error("Error loading maps:", error);
++   }
++ }
+  
+  const INITIAL_REGION = {
+```
+
+```diff
+    },
+  ];
+- 
+- // Dynamic import for react-native-maps
+- let MapView: any;
+- let Marker: any;
+- let Callout: any;
+- let PROVIDER_GOOGLE: any;
+- 
+- async function loadMap() {
+-   if (Platform.OS !== 'web') {
+-     try {
+-       const maps = await import('react-native-maps');
+-       MapView = maps.default;
+-       Marker = maps.Marker;
+-       Callout = maps.Callout;
+-       PROVIDER_GOOGLE = maps.PROVIDER_GOOGLE;
+-       return true;
+-     } catch (error) {
+-       console.error("Error loading maps:", error);
+-       return false;
+-     }
+-   }
+-   return false;
+- }
+  
+  // Enhanced map component with interactive markers and custom styling
+```
+
+```diff
+    onMarkerPress?: () => void
+  }) {
+-   const [isMapLoaded, setIsMapLoaded] = useState(false);
+    const mapRef = useRef(null);
+- 
+-   useEffect(() => {
+-     loadMap().then((success) => {
+-       if (success) setIsMapLoaded(true);
+-     });
+-   }, []);
+  
+    const handleMarkerPress = () => {
+```
+
+```diff
+  
+    // Loading state
+-   if (!isMapLoaded || !MapView) {
++   if (!MapView) {
+      return (
+        <Animated.View style={[styles.mapContainer, { height: mapHeight.value }]}>
+```
+
+---
+
+Let me fix the Tool icon error:
+
+---
+
+<details>
+            <summary>Grep search for "Tool" • **2** files</summary>
+        
+| File | Line | Match |
+|------|------|-------|
+| `file:///Users/amandanordqvisted/vst-boat/app/%28tabs%29/location.tsx` | L424 | `{item.type === 'service' && <Tool size={16} color="#FFFFFF" />}` |
+| `file:///Users/amandanordqvisted/vst-boat/app/%28tabs%29/location.tsx` | L453 | `let Tool: any;` |
+| `file:///Users/amandanordqvisted/vst-boat/app/%28tabs%29/location.tsx` | L460 | `Tool = icons.Tool;` |
+| `file:///Users/amandanordqvisted/vst-boat/app/%28tabs%29/location.tsx` | L467 | `Tool = MockIcon;` |
+| `file:///Users/amandanordqvisted/vst-boat/app/%28tabs%29/location.tsx` | L424 | `{item.type === 'service' && <Tool size={16} color="#FFFFFF" />}` |
+| `file:///Users/amandanordqvisted/vst-boat/app/%28tabs%29/location.tsx` | L453 | `let Tool: any;` |
+| `file:///Users/amandanordqvisted/vst-boat/app/%28tabs%29/location.tsx` | L460 | `Tool = icons.Tool;` |
+| `file:///Users/amandanordqvisted/vst-boat/app/%28tabs%29/location.tsx` | L467 | `Tool = MockIcon;` |
+
+</details>
+
+---
+
+
+
+---
+

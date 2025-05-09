@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -11,7 +11,9 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
-  Image
+  Image,
+  Keyboard,
+  Dimensions
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { router } from 'expo-router';
@@ -29,11 +31,23 @@ import {
   Anchor, 
   Droplets, 
   Gauge, 
-  Waves
+  Waves,
+  Check
 } from 'lucide-react-native';
 import Colors from '@/constants/Colors';
 import { useAuth } from '@/hooks/useAuth';
-import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from 'react-native-reanimated';
+import Animated, { 
+  useSharedValue, 
+  useAnimatedStyle, 
+  withTiming, 
+  Easing, 
+  interpolate,
+  Extrapolation,
+  FadeIn,
+  FadeInRight
+} from 'react-native-reanimated';
+
+const { width, height } = Dimensions.get('window');
 
 interface BoatDetails {
   name: string;
@@ -69,12 +83,47 @@ const AnimatedInput: React.FC<AnimatedInputProps> = ({
   required = false
 }) => {
   const focused = useSharedValue(0);
+  const filled = value.length > 0;
   
   const containerStyle = useAnimatedStyle(() => {
     return {
-      borderColor: focused.value === 1 ? Colors.primary[400] : Colors.neutral[200],
-      backgroundColor: focused.value === 1 ? 'rgba(230, 238, 245, 0.5)' : 'rgba(255, 255, 255, 0.9)',
-      transform: [{ scale: focused.value === 1 ? 1.02 : 1 }]
+      borderColor: interpolate(
+        focused.value,
+        [0, 1],
+        [filled ? Colors.neutral[300] : Colors.neutral[200], Colors.primary[400]]
+      ),
+      backgroundColor: interpolate(
+        focused.value,
+        [0, 1],
+        [filled ? 'rgba(245, 247, 250, 0.8)' : 'rgba(255, 255, 255, 0.9)', 'rgba(230, 238, 245, 0.5)']
+      ),
+      transform: [{ scale: interpolate(
+        focused.value,
+        [0, 1],
+        [1, 1.02],
+        Extrapolation.CLAMP
+      )}],
+      shadowOpacity: interpolate(
+        focused.value,
+        [0, 1],
+        [0.05, 0.1]
+      )
+    };
+  });
+  
+  const iconStyle = useAnimatedStyle(() => {
+    return {
+      opacity: interpolate(
+        focused.value,
+        [0, 1],
+        [0.7, 1]
+      ),
+      transform: [{ scale: interpolate(
+        focused.value,
+        [0, 1],
+        [1, 1.1],
+        Extrapolation.CLAMP
+      )}]
     };
   });
   
@@ -88,9 +137,9 @@ const AnimatedInput: React.FC<AnimatedInputProps> = ({
   
   return (
     <Animated.View style={[styles.inputGroup, containerStyle]}>
-      <View style={styles.inputIcon}>
+      <Animated.View style={[styles.inputIcon, iconStyle]}>
         {icon}
-      </View>
+      </Animated.View>
       <View style={styles.inputWrapper}>
         <Text style={styles.inputLabel}>
           {label}
@@ -108,6 +157,77 @@ const AnimatedInput: React.FC<AnimatedInputProps> = ({
           onBlur={handleBlur}
         />
       </View>
+      {filled && (
+        <Animated.View 
+          entering={FadeIn}
+          style={styles.checkmarkContainer}
+        >
+          <Check size={16} color={Colors.primary[500]} />
+        </Animated.View>
+      )}
+    </Animated.View>
+  );
+};
+
+// Button component with animation
+interface AnimatedButtonProps {
+  text: string;
+  onPress: () => void;
+  icon?: React.ReactNode;
+  disabled?: boolean;
+  isLoading?: boolean;
+  secondary?: boolean;
+}
+
+const AnimatedButton: React.FC<AnimatedButtonProps> = ({ 
+  text, 
+  onPress, 
+  icon, 
+  disabled = false, 
+  isLoading = false,
+  secondary = false
+}) => {
+  const scale = useSharedValue(1);
+  
+  const buttonStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ scale: scale.value }],
+      opacity: disabled ? 0.7 : 1
+    };
+  });
+  
+  const handlePressIn = () => {
+    scale.value = withTiming(0.97, { duration: 100 });
+  };
+  
+  const handlePressOut = () => {
+    scale.value = withTiming(1, { duration: 200 });
+  };
+  
+  return (
+    <Animated.View style={[buttonStyle, secondary ? {} : styles.buttonShadow]}>
+      <TouchableOpacity
+        style={[
+          secondary ? styles.secondaryButton : styles.primaryButton,
+          disabled && styles.disabledButton
+        ]}
+        onPress={onPress}
+        disabled={disabled || isLoading}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        activeOpacity={0.7}
+      >
+        {isLoading ? (
+          <ActivityIndicator color={secondary ? Colors.primary[600] : "#FFFFFF"} size="small" />
+        ) : (
+          <View style={styles.buttonContent}>
+            <Text style={[styles.buttonText, secondary && styles.secondaryButtonText]}>
+              {text}
+            </Text>
+            {icon && <View style={styles.buttonIconContainer}>{icon}</View>}
+          </View>
+        )}
+      </TouchableOpacity>
     </Animated.View>
   );
 };
@@ -116,6 +236,7 @@ export default function BoatRegistrationScreen() {
   const { user, associateBoat } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'basic' | 'additional'>('basic');
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [boatDetails, setBoatDetails] = useState<BoatDetails>({
     name: '',
     model: '',
@@ -136,6 +257,27 @@ export default function BoatRegistrationScreen() {
     };
   });
 
+  // Add keyboard listeners
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener(
+      'keyboardDidShow',
+      () => {
+        setKeyboardVisible(true);
+      }
+    );
+    const keyboardDidHideListener = Keyboard.addListener(
+      'keyboardDidHide',
+      () => {
+        setKeyboardVisible(false);
+      }
+    );
+
+    return () => {
+      keyboardDidShowListener.remove();
+      keyboardDidHideListener.remove();
+    };
+  }, []);
+
   const updateBoatDetail = (field: keyof BoatDetails, value: string) => {
     setBoatDetails(prev => ({
       ...prev,
@@ -150,9 +292,10 @@ export default function BoatRegistrationScreen() {
 
   const handleTabChange = (tab: 'basic' | 'additional') => {
     setActiveTab(tab);
-    // Animate the indicator
+    // Animate the indicator based on screen width
+    const indicatorWidth = (width - 48) / 2;
     tabIndicatorPosition.value = withTiming(
-      tab === 'basic' ? 0 : 150, 
+      tab === 'basic' ? 0 : indicatorWidth, 
       { duration: 250, easing: Easing.bezier(0.4, 0.0, 0.2, 1) }
     );
   };
@@ -208,7 +351,7 @@ export default function BoatRegistrationScreen() {
   };
 
   const renderBasicInfoForm = () => (
-    <>
+    <Animated.View entering={FadeInRight.duration(300).delay(100)}>
       <AnimatedInput
         label="Boat Name"
         icon={<Ship size={22} color={Colors.primary[600]} />}
@@ -250,7 +393,7 @@ export default function BoatRegistrationScreen() {
             onChangeText={(value) => updateBoatDetail('length', value)}
             placeholder="Length"
             keyboardType="decimal-pad"
-            maxLength={6}
+            maxLength={5}
           />
         </View>
       </View>
@@ -260,22 +403,39 @@ export default function BoatRegistrationScreen() {
         icon={<BookText size={22} color={Colors.primary[600]} />}
         value={boatDetails.registrationNumber}
         onChangeText={(value) => updateBoatDetail('registrationNumber', value)}
-        placeholder="Enter registration number"
+        placeholder="Official registration number"
         maxLength={20}
         required
       />
-    </>
+
+      <TouchableOpacity 
+        style={styles.scanButton}
+        onPress={handleScanQRCode}
+      >
+        <View style={styles.scanButtonIcon}>
+          <Camera size={20} color={Colors.primary[600]} />
+        </View>
+        <View style={styles.scanButtonTextContainer}>
+          <Text style={styles.scanButtonTitle}>Scan Boat QR Code</Text>
+          <Text style={styles.scanButtonSubtitle}>
+            Quickly register by scanning your vessel's QR code
+          </Text>
+        </View>
+        <View style={styles.scanButtonArrow}>
+          <ArrowRight size={18} color={Colors.primary[600]} />
+        </View>
+      </TouchableOpacity>
+    </Animated.View>
   );
 
   const renderAdditionalInfoForm = () => (
-    <>
+    <Animated.View entering={FadeInRight.duration(300).delay(100)}>
       <AnimatedInput
         label="Manufacturer"
-        icon={<PenLine size={22} color={Colors.primary[600]} />}
+        icon={<Ship size={22} color={Colors.primary[600]} />}
         value={boatDetails.manufacturer}
         onChangeText={(value) => updateBoatDetail('manufacturer', value)}
-        placeholder="Enter manufacturer"
-        maxLength={50}
+        placeholder="Boat manufacturer"
       />
 
       <AnimatedInput
@@ -283,244 +443,267 @@ export default function BoatRegistrationScreen() {
         icon={<Gauge size={22} color={Colors.primary[600]} />}
         value={boatDetails.engineType}
         onChangeText={(value) => updateBoatDetail('engineType', value)}
-        placeholder="Enter engine type"
-        maxLength={50}
+        placeholder="e.g. Outboard, Inboard"
       />
 
       <AnimatedInput
         label="Hull Material"
-        icon={<Waves size={22} color={Colors.primary[600]} />}
+        icon={<Droplets size={22} color={Colors.primary[600]} />}
         value={boatDetails.hullMaterial}
         onChangeText={(value) => updateBoatDetail('hullMaterial', value)}
-        placeholder="Enter hull material"
-        maxLength={50}
+        placeholder="e.g. Fiberglass, Aluminum"
       />
-    </>
+
+      <View style={styles.noteContainer}>
+        <View style={styles.noteIconContainer}>
+          <Info size={20} color={Colors.primary[600]} />
+        </View>
+        <Text style={styles.noteText}>
+          Additional information helps customize your boating experience. This information can be added or edited later.
+        </Text>
+      </View>
+    </Animated.View>
   );
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar style="light" />
-      <LinearGradient
-        colors={[Colors.primary[900], Colors.primary[700]]}
+    <SafeAreaView style={styles.container}>
+      <StatusBar style="dark" />
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.container}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 10 : 0}
       >
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-            <ChevronLeft size={24} color="#FFFFFF" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Register Your Boat</Text>
-          <View style={styles.placeholder} />
-        </View>
-
-        <KeyboardAvoidingView
-          style={{ flex: 1 }}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
+        <LinearGradient
+          colors={['#F0F4F8', '#FFFFFF']}
+          style={styles.gradient}
         >
-          <ScrollView 
-            contentContainerStyle={styles.scrollContent}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-          >
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Boat Information</Text>
-              <Text style={styles.sectionDescription}>
-                Enter your boat details manually or scan a QR code
-              </Text>
-            </View>
+          <View style={styles.header}>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => router.back()}
+            >
+              <ChevronLeft size={24} color={Colors.neutral[800]} />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Register Boat</Text>
+            <View style={styles.headerRight} />
+          </View>
 
-            <View style={styles.formContainer}>
-              <View style={styles.tabsContainer}>
-                <TouchableOpacity 
-                  style={[styles.tab, activeTab === 'basic' && styles.activeTab]} 
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            {!keyboardVisible && (
+              <View style={styles.boatIllustration}>
+                <LinearGradient
+                  colors={[Colors.primary[100], Colors.primary[50]]}
+                  style={styles.illustrationBackground}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                >
+                  <Ship size={64} color={Colors.primary[600]} />
+                </LinearGradient>
+              </View>
+            )}
+
+            <Text style={styles.formTitle}>Vessel Information</Text>
+            <Text style={styles.formSubtitle}>
+              Please provide details about your boat to complete registration
+            </Text>
+
+            <View style={styles.tabContainer}>
+              <View style={styles.tabBar}>
+                <TouchableOpacity
+                  style={[styles.tab, activeTab === 'basic' && styles.activeTab]}
                   onPress={() => handleTabChange('basic')}
                 >
-                  <Text style={[styles.tabText, activeTab === 'basic' && styles.activeTabText]}>
+                  <Text
+                    style={[
+                      styles.tabText,
+                      activeTab === 'basic' && styles.activeTabText
+                    ]}
+                  >
                     Basic Info
                   </Text>
                 </TouchableOpacity>
-                <TouchableOpacity 
-                  style={[styles.tab, activeTab === 'additional' && styles.activeTab]} 
+                <TouchableOpacity
+                  style={[styles.tab, activeTab === 'additional' && styles.activeTab]}
                   onPress={() => handleTabChange('additional')}
                 >
-                  <Text style={[styles.tabText, activeTab === 'additional' && styles.activeTabText]}>
-                    Additional Info
+                  <Text
+                    style={[
+                      styles.tabText,
+                      activeTab === 'additional' && styles.activeTabText
+                    ]}
+                  >
+                    Additional
                   </Text>
                 </TouchableOpacity>
                 <Animated.View style={[styles.tabIndicator, tabIndicatorStyle]} />
               </View>
 
-              <View style={styles.formContent}>
+              <View style={styles.formContainer}>
                 {activeTab === 'basic' ? renderBasicInfoForm() : renderAdditionalInfoForm()}
               </View>
             </View>
-
-            <View style={styles.qrSection}>
-              <View style={styles.dividerContainer}>
-                <View style={styles.divider} />
-                <Text style={styles.dividerText}>or</Text>
-                <View style={styles.divider} />
-              </View>
-              
-              <TouchableOpacity style={styles.qrButton} onPress={handleScanQRCode}>
-                <LinearGradient
-                  colors={[Colors.primary[500], Colors.primary[700]]}
-                  style={styles.qrButtonGradient}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                >
-                  <Camera size={24} color="#FFFFFF" />
-                  <Text style={styles.qrButtonText}>Scan QR Code Instead</Text>
-                </LinearGradient>
-              </TouchableOpacity>
-            </View>
-
-            <TouchableOpacity 
-              style={styles.submitButton} 
-              onPress={handleRegisterBoat}
-              disabled={isLoading}
-            >
-              <LinearGradient
-                colors={[Colors.primary[500], Colors.primary[700]]}
-                style={styles.submitButtonGradient}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-              >
-                {isLoading ? (
-                  <ActivityIndicator color="#FFFFFF" size="small" />
-                ) : (
-                  <>
-                    <Text style={styles.submitButtonText}>Register Boat</Text>
-                    <ArrowRight size={20} color="#FFFFFF" />
-                  </>
-                )}
-              </LinearGradient>
-            </TouchableOpacity>
           </ScrollView>
-        </KeyboardAvoidingView>
-      </LinearGradient>
+
+          <View style={styles.footer}>
+            <AnimatedButton
+              text={activeTab === 'basic' ? 'Continue to Additional' : 'Register Boat'}
+              icon={<ArrowRight size={20} color="#FFFFFF" />}
+              onPress={activeTab === 'basic' ? () => handleTabChange('additional') : handleRegisterBoat}
+              isLoading={isLoading}
+              disabled={activeTab === 'basic' ? 
+                !(boatDetails.name && boatDetails.model && boatDetails.registrationNumber) : 
+                false
+              }
+            />
+            
+            {activeTab === 'additional' && (
+              <AnimatedButton
+                text="Back to Basic Info"
+                onPress={() => handleTabChange('basic')}
+                secondary
+              />
+            )}
+          </View>
+        </LinearGradient>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: Colors.primary[900],
-  },
   container: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  gradient: {
     flex: 1,
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
+    backgroundColor: 'transparent',
   },
   backButton: {
     padding: 8,
+    borderRadius: 12,
+    backgroundColor: Colors.neutral[100],
   },
   headerTitle: {
     fontFamily: 'Poppins-SemiBold',
     fontSize: 18,
-    color: '#FFFFFF',
+    color: Colors.neutral[900],
   },
-  placeholder: {
+  headerRight: {
     width: 40,
   },
+  scrollView: {
+    flex: 1,
+  },
   scrollContent: {
-    paddingBottom: 40,
-  },
-  section: {
     paddingHorizontal: 24,
-    marginTop: 16,
-    marginBottom: 24,
+    paddingBottom: 24,
   },
-  sectionTitle: {
-    fontFamily: 'Poppins-Bold',
-    fontSize: 24,
-    color: '#FFFFFF',
-    marginBottom: 8,
+  boatIllustration: {
+    alignItems: 'center',
+    marginVertical: 24,
   },
-  sectionDescription: {
-    fontFamily: 'Poppins-Regular',
-    fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.8)',
-    lineHeight: 22,
-  },
-  formContainer: {
-    margin: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.92)',
-    borderRadius: 20,
-    overflow: 'hidden',
-    shadowColor: '#000',
+  illustrationBackground: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: Colors.primary[900],
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
-    elevation: 5,
+    elevation: 4,
   },
-  tabsContainer: {
+  formTitle: {
+    fontFamily: 'Poppins-Bold',
+    fontSize: 24,
+    color: Colors.neutral[900],
+    marginBottom: 8,
+  },
+  formSubtitle: {
+    fontFamily: 'Poppins-Regular',
+    fontSize: 16,
+    color: Colors.neutral[600],
+    marginBottom: 24,
+    lineHeight: 22,
+  },
+  tabContainer: {
+    flex: 1,
+  },
+  tabBar: {
     flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.neutral[200],
+    backgroundColor: Colors.neutral[100],
+    borderRadius: 12,
+    marginBottom: 24,
+    padding: 4,
     position: 'relative',
   },
   tab: {
     flex: 1,
-    paddingVertical: 16,
+    paddingVertical: 12,
     alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+    zIndex: 1,
   },
   activeTab: {
-    backgroundColor: 'transparent',
+    // Active styles are handled by the indicator
+  },
+  tabIndicator: {
+    position: 'absolute',
+    width: '50%',
+    height: '100%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    shadowColor: Colors.neutral[900],
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+    top: 4,
+    left: 4,
   },
   tabText: {
     fontFamily: 'Poppins-Medium',
     fontSize: 14,
-    color: Colors.neutral[600],
+    color: Colors.neutral[500],
   },
   activeTabText: {
-    fontFamily: 'Poppins-SemiBold',
-    color: Colors.primary[700],
+    color: Colors.primary[600],
   },
-  tabIndicator: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    width: 150,
-    height: 3,
-    backgroundColor: Colors.primary[600],
-    borderTopLeftRadius: 3,
-    borderTopRightRadius: 3,
-  },
-  formContent: {
-    padding: 16,
+  formContainer: {
+    marginBottom: 16,
   },
   inputGroup: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    padding: 12,
     marginBottom: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderWidth: 1,
     borderColor: Colors.neutral[200],
-    shadowColor: Colors.primary[900],
+    shadowColor: Colors.neutral[900],
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
   },
   inputIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: 'rgba(230, 238, 245, 0.7)',
-    alignItems: 'center',
-    justifyContent: 'center',
     marginRight: 12,
   },
   inputWrapper: {
@@ -528,86 +711,155 @@ const styles = StyleSheet.create({
   },
   inputLabel: {
     fontFamily: 'Poppins-Medium',
-    fontSize: 12,
-    color: Colors.neutral[600],
+    fontSize: 14,
+    color: Colors.neutral[700],
     marginBottom: 4,
   },
-  requiredStar: {
-    color: Colors.accent[600],
-    fontSize: 14,
-  },
   input: {
-    fontFamily: 'Poppins-Regular',
-    fontSize: 16,
+    fontFamily: 'Inter-Regular',
+    fontSize: 15,
     color: Colors.neutral[900],
     padding: 0,
+    height: 24,
+  },
+  requiredStar: {
+    color: Colors.primary[500],
+    marginLeft: 2,
+  },
+  checkmarkContainer: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: Colors.primary[50],
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   rowInputs: {
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
-  qrSection: {
-    marginVertical: 16,
-    paddingHorizontal: 24,
-  },
-  dividerContainer: {
+  scanButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
-  },
-  divider: {
-    flex: 1,
-    height: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-  },
-  dividerText: {
-    fontFamily: 'Poppins-Medium',
-    fontSize: 16,
-    color: '#FFFFFF',
-    paddingHorizontal: 16,
-  },
-  qrButton: {
+    backgroundColor: Colors.primary[50],
     borderRadius: 16,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 5,
+    padding: 16,
+    marginVertical: 8,
+    borderWidth: 1,
+    borderColor: Colors.primary[100],
   },
-  qrButtonGradient: {
+  scanButtonIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+    shadowColor: Colors.primary[900],
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  scanButtonTextContainer: {
+    flex: 1,
+  },
+  scanButtonTitle: {
+    fontFamily: 'Poppins-Medium',
+    fontSize: 15,
+    color: Colors.primary[700],
+    marginBottom: 2,
+  },
+  scanButtonSubtitle: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 13,
+    color: Colors.primary[600],
+    lineHeight: 18,
+  },
+  scanButtonArrow: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  footer: {
+    padding: 24,
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: Colors.neutral[200],
+    shadowColor: Colors.neutral[900],
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  buttonShadow: {
+    shadowColor: Colors.primary[800],
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  primaryButton: {
+    backgroundColor: Colors.primary[600],
+    borderRadius: 16,
+    paddingVertical: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  secondaryButton: {
+    borderRadius: 16,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
+  },
+  disabledButton: {
+    opacity: 0.6,
+  },
+  buttonContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
   },
-  qrButtonText: {
+  buttonText: {
     fontFamily: 'Poppins-SemiBold',
     fontSize: 16,
     color: '#FFFFFF',
-    marginLeft: 12,
   },
-  submitButton: {
-    marginHorizontal: 24,
-    marginTop: 24,
-    borderRadius: 16,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 5,
+  secondaryButtonText: {
+    fontFamily: 'Poppins-Medium',
+    fontSize: 15,
+    color: Colors.primary[600],
   },
-  submitButtonGradient: {
+  buttonIconContainer: {
+    marginLeft: 8,
+  },
+  noteContainer: {
     flexDirection: 'row',
+    backgroundColor: Colors.neutral[100],
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 8,
+    alignItems: 'flex-start',
+  },
+  noteIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: Colors.neutral[50],
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
-  },
-  submitButtonText: {
-    fontFamily: 'Poppins-Bold',
-    fontSize: 18,
-    color: '#FFFFFF',
     marginRight: 12,
+  },
+  noteText: {
+    flex: 1,
+    fontFamily: 'Inter-Regular',
+    fontSize: 14,
+    color: Colors.neutral[700],
+    lineHeight: 20,
   },
 }); 

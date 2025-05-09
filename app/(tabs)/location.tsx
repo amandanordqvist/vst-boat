@@ -1,12 +1,32 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, Dimensions, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MapPin, Navigation, Anchor, History, Compass, LocateFixed, Clock, MoreHorizontal, ChevronRight, Activity, Wind } from 'lucide-react-native';
+import { MapPin, Navigation, Anchor, History, Compass, LocateFixed, Clock, MoreHorizontal, ChevronRight, Activity, Wind, Wrench } from 'lucide-react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring, withTiming, Easing } from 'react-native-reanimated';
 import Colors from '@/constants/Colors';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const { width } = Dimensions.get('window');
+
+// Import MapView directly when not on web
+let MapView: any = null;
+let Marker: any = null;
+let Callout: any = null;
+let PROVIDER_GOOGLE: any = null;
+
+// Pre-load the map components if not on web
+if (Platform.OS !== 'web') {
+  try {
+    // Use require instead of dynamic import for better compatibility
+    const ReactNativeMaps = require('react-native-maps');
+    MapView = ReactNativeMaps.default;
+    Marker = ReactNativeMaps.Marker;
+    Callout = ReactNativeMaps.Callout;
+    PROVIDER_GOOGLE = ReactNativeMaps.PROVIDER_GOOGLE;
+  } catch (error) {
+    console.error("Error loading maps:", error);
+  }
+}
 
 const INITIAL_REGION = {
   latitude: 1.290270,
@@ -80,42 +100,12 @@ const NEARBY_LOCATIONS = [
   },
 ];
 
-// Dynamic import for react-native-maps
-let MapView: any;
-let Marker: any;
-let Callout: any;
-let PROVIDER_GOOGLE: any;
-
-async function loadMap() {
-  if (Platform.OS !== 'web') {
-    try {
-      const maps = await import('react-native-maps');
-      MapView = maps.default;
-      Marker = maps.Marker;
-      Callout = maps.Callout;
-      PROVIDER_GOOGLE = maps.PROVIDER_GOOGLE;
-      return true;
-    } catch (error) {
-      console.error("Error loading maps:", error);
-      return false;
-    }
-  }
-  return false;
-}
-
 // Enhanced map component with interactive markers and custom styling
 function MapComponent({ mapHeight, onMarkerPress }: { 
   mapHeight: Animated.SharedValue<number>,
   onMarkerPress?: () => void
 }) {
-  const [isMapLoaded, setIsMapLoaded] = useState(false);
   const mapRef = useRef(null);
-
-  useEffect(() => {
-    loadMap().then((success) => {
-      if (success) setIsMapLoaded(true);
-    });
-  }, []);
 
   const handleMarkerPress = () => {
     if (onMarkerPress) onMarkerPress();
@@ -147,7 +137,7 @@ function MapComponent({ mapHeight, onMarkerPress }: {
   }
 
   // Loading state
-  if (!isMapLoaded || !MapView) {
+  if (!MapView) {
     return (
       <Animated.View style={[styles.mapContainer, { height: mapHeight.value }]}>
         <View style={[styles.map, styles.loadingContainer]}>
@@ -430,9 +420,9 @@ export default function LocationScreen() {
                     item.type === 'restaurant' && styles.nearbyIconRestaurant,
                     item.type === 'service' && styles.nearbyIconService,
                   ]}>
-                    {item.type === 'fuel' && <Droplets size={16} color="#FFFFFF" />}
-                    {item.type === 'restaurant' && <Utensils size={16} color="#FFFFFF" />}
-                    {item.type === 'service' && <Tool size={16} color="#FFFFFF" />}
+                    {item.type === 'fuel' && <Wind size={16} color="#FFFFFF" />}
+                    {item.type === 'restaurant' && <Clock size={16} color="#FFFFFF" />}
+                    {item.type === 'service' && <Wrench size={16} color="#FFFFFF" />}
                   </View>
                   
                   <View style={styles.nearbyInfo}>
@@ -461,21 +451,21 @@ export default function LocationScreen() {
 
 // Import icons dynamically to prevent undefined errors
 let Utensils: any;
-let Tool: any;
+let WrenchIcon: any;
 let Droplets: any;
 
 // Import icons if not on web (web doesn't handle this dynamic import well)
 if (Platform.OS !== 'web') {
   import('lucide-react-native').then((icons) => {
     Utensils = icons.Utensils;
-    Tool = icons.Tool;
+    WrenchIcon = icons.Wrench;
     Droplets = icons.Droplets;
   });
 } else {
   // Mock components for web
   const MockIcon = ({ size, color }: any) => <View style={{ width: size, height: size, backgroundColor: color, borderRadius: size/2 }} />;
   Utensils = MockIcon;
-  Tool = MockIcon;
+  WrenchIcon = MockIcon;
   Droplets = MockIcon;
 }
 

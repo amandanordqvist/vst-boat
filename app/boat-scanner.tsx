@@ -7,7 +7,8 @@ import {
   SafeAreaView,
   Dimensions,
   Alert,
-  ActivityIndicator
+  ActivityIndicator,
+  Platform
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { router } from 'expo-router';
@@ -20,6 +21,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 const { width } = Dimensions.get('window');
 const scannerSize = width * 0.7;
+const scannerBorderWidth = 2;
 
 export default function BoatScannerScreen() {
   const { associateBoat, isAuthenticated, user, verifyPhoneAndLogin } = useAuth();
@@ -252,7 +254,7 @@ export default function BoatScannerScreen() {
           </LinearGradient>
 
           <View style={styles.scannerContainer}>
-            <View style={styles.scannerFrame}>
+            <View style={styles.scannerFrameContainer}>
               {!scanned && (
                 <View 
                   style={[
@@ -267,42 +269,39 @@ export default function BoatScannerScreen() {
 
             {isProcessing && (
               <View style={styles.processingContainer}>
-                <ActivityIndicator size="large" color="#FFFFFF" />
-                <Text style={styles.processingText}>
-                  {scanMode === 'login' ? 'Authenticating...' : 'Processing QR Code...'}
-                </Text>
+                <View style={styles.processingInner}>
+                  <ActivityIndicator size="large" color="#FFFFFF" />
+                  <Text style={styles.processingText}>
+                    {scanMode === 'login' ? 'Authenticating...' : 'Processing QR Code...'}
+                  </Text>
+                </View>
               </View>
             )}
           </View>
 
           <LinearGradient
             colors={['transparent', 'rgba(10, 31, 58, 0.5)', 'rgba(10, 31, 58, 0.9)']}
-            style={styles.instructionsGradient}
+            style={styles.footerGradient}
           >
-            <View style={styles.instructions}>
-              <Text style={styles.instructionsTitle}>
-                {scanMode === 'login' ? 'Scan Login QR Code' : 'Scan Boat QR Code'}
-              </Text>
-              <Text style={styles.instructionsText}>
-                {scanMode === 'login' 
-                  ? 'Position the login QR code within the frame to authenticate.' 
-                  : 'Position the QR code from your boat registration document within the frame to register it to your account.'
-                }
-              </Text>
-              
-              {isAuthenticated && (
-                <TouchableOpacity 
-                  style={styles.switchModeButton} 
-                  onPress={toggleScanMode}
-                >
-                  <Text style={styles.switchModeText}>
-                    {scanMode === 'login' 
-                      ? 'Switch to Boat Registration' 
-                      : 'Switch to Login Mode'
-                    }
-                  </Text>
-                </TouchableOpacity>
-              )}
+            <View style={styles.instructionsContainer}>
+              <View style={styles.instructionsIcon}>
+                {scanMode === 'login' ? (
+                  <ScanLine size={24} color="#FFFFFF" />
+                ) : (
+                  <Ship size={24} color="#FFFFFF" />
+                )}
+              </View>
+              <View style={styles.instructionsContent}>
+                <Text style={styles.instructionsTitle}>
+                  {scanMode === 'login' ? 'Scan Login QR Code' : 'Scan Boat QR Code'}
+                </Text>
+                <Text style={styles.instructionsText}>
+                  {scanMode === 'login' 
+                    ? 'Position the login QR code within the frame to authenticate.' 
+                    : 'Position the QR code from your boat registration document within the frame to register it to your account.'
+                  }
+                </Text>
+              </View>
             </View>
           
             {scanned && !isProcessing && (
@@ -330,32 +329,38 @@ const styles = StyleSheet.create({
   },
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    backgroundColor: 'transparent',
+    justifyContent: 'space-between',
   },
   headerGradient: {
-    paddingTop: 16,
-    paddingBottom: 40,
+    paddingTop: Platform.OS === 'android' ? 40 : 0,
+    paddingBottom: 30,
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
   },
   backButton: {
-    padding: 8,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerTitle: {
-    fontFamily: 'Poppins-SemiBold',
+    fontFamily: 'Poppins-Bold',
     fontSize: 18,
     color: '#FFFFFF',
   },
   modeToggleButton: {
-    padding: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 12,
     width: 40,
     height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -363,76 +368,129 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: -20,
   },
-  scannerFrame: {
+  scannerFrameContainer: {
     width: scannerSize,
     height: scannerSize,
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
-    borderRadius: 20,
-    overflow: 'hidden',
-    justifyContent: 'center',
-    alignItems: 'center',
+    borderWidth: scannerBorderWidth,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
     backgroundColor: 'transparent',
+    position: 'relative',
+    borderRadius: 24,
+    overflow: 'hidden',
+  },
+  scannerCorner: {
+    position: 'absolute',
+    width: 24,
+    height: 24,
+    borderColor: Colors.primary[400],
+    width: 40,
+    height: 40,
+  },
+  topLeftCorner: {
+    top: -scannerBorderWidth,
+    left: -scannerBorderWidth,
+    borderTopWidth: scannerBorderWidth + 2,
+    borderLeftWidth: scannerBorderWidth + 2,
+    borderTopLeftRadius: 16,
+  },
+  topRightCorner: {
+    top: -scannerBorderWidth,
+    right: -scannerBorderWidth,
+    borderTopWidth: scannerBorderWidth + 2,
+    borderRightWidth: scannerBorderWidth + 2,
+    borderTopRightRadius: 16,
+  },
+  bottomLeftCorner: {
+    bottom: -scannerBorderWidth,
+    left: -scannerBorderWidth,
+    borderBottomWidth: scannerBorderWidth + 2,
+    borderLeftWidth: scannerBorderWidth + 2,
+    borderBottomLeftRadius: 16,
+  },
+  bottomRightCorner: {
+    bottom: -scannerBorderWidth,
+    right: -scannerBorderWidth,
+    borderBottomWidth: scannerBorderWidth + 2,
+    borderRightWidth: scannerBorderWidth + 2,
+    borderBottomRightRadius: 16,
   },
   scanLine: {
-    position: 'absolute',
     width: '100%',
     height: 2,
-    backgroundColor: 'rgba(255, 255, 255, 0.6)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: 'transparent',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+  },
+  scanLineGradient: {
+    height: '100%',
+    width: '100%',
   },
   processingContainer: {
     position: 'absolute',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    paddingHorizontal: 24,
-    paddingVertical: 16,
-    borderRadius: 16,
+    borderRadius: 20,
+    overflow: 'hidden',
+    zIndex: 10,
+  },
+  processingInner: {
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 20,
+    paddingVertical: 20,
+    paddingHorizontal: 32,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
   processingText: {
     fontFamily: 'Poppins-Medium',
     fontSize: 16,
-    color: '#FFFFFF',
+    color: Colors.neutral[800],
     marginTop: 12,
   },
-  instructionsGradient: {
-    paddingTop: 40,
-    paddingBottom: 16,
+  footerGradient: {
+    paddingTop: 30,
+    paddingBottom: Platform.OS === 'android' ? 30 : 0,
   },
-  instructions: {
-    padding: 20,
+  instructionsContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    marginHorizontal: 20,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  instructionsIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16,
+  },
+  instructionsContent: {
+    flex: 1,
   },
   instructionsTitle: {
-    fontFamily: 'Poppins-Bold',
-    fontSize: 22,
+    fontFamily: 'Poppins-SemiBold',
+    fontSize: 16,
     color: '#FFFFFF',
-    marginBottom: 8,
-    textAlign: 'center',
+    marginBottom: 4,
   },
   instructionsText: {
-    fontFamily: 'Poppins-Regular',
+    fontFamily: 'Inter-Regular',
     fontSize: 14,
-    color: '#FFFFFF',
-    opacity: 0.9,
-    textAlign: 'center',
-    marginBottom: 16,
-  },
-  switchModeButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    marginTop: 8,
-  },
-  switchModeText: {
-    fontFamily: 'Poppins-Medium',
-    fontSize: 14,
-    color: '#FFFFFF',
+    color: 'rgba(255, 255, 255, 0.8)',
+    lineHeight: 20,
   },
   scanAgainButton: {
     backgroundColor: Colors.primary[600],
@@ -449,42 +507,43 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: Colors.background,
   },
   loadingText: {
-    fontFamily: 'Poppins-Medium',
+    fontFamily: 'Poppins-Regular',
     fontSize: 16,
-    color: Colors.neutral[800],
+    color: Colors.neutral[700],
     marginTop: 16,
   },
   permissionContainer: {
     flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: Colors.background,
     padding: 24,
   },
   permissionTitle: {
-    fontFamily: 'Poppins-Bold',
+    fontFamily: 'Poppins-SemiBold',
     fontSize: 22,
     color: Colors.neutral[900],
-    marginTop: 16,
-    marginBottom: 8,
+    marginTop: 24,
+    marginBottom: 12,
   },
   permissionText: {
-    fontFamily: 'Poppins-Regular',
+    fontFamily: 'Inter-Regular',
     fontSize: 16,
     color: Colors.neutral[700],
     textAlign: 'center',
     marginBottom: 24,
+    lineHeight: 24,
   },
   permissionButton: {
     backgroundColor: Colors.primary[600],
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 32,
+    borderRadius: 12,
   },
   permissionButtonText: {
     fontFamily: 'Poppins-Medium',
