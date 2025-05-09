@@ -53,6 +53,7 @@ export default function RootLayout() {
         <Stack.Screen name="registration" />
         <Stack.Screen name="boat-registration" />
         <Stack.Screen name="boat-scanner" />
+        <Stack.Screen name="profile-creation" />
         <Stack.Screen name="+not-found" />
       </Stack>
     </AuthProvider>

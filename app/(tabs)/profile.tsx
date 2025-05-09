@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Platform, 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { User, Settings, Ship, Bell, Shield, LifeBuoy, LogOut, ChevronRight, Anchor } from 'lucide-react-native';
 import Colors from '@/constants/Colors';
-import DashboardHeader from '@/components/DashboardHeader';
 import { useAuth } from '@/hooks/useAuth';
 import { router } from 'expo-router';
 
@@ -100,8 +99,6 @@ export default function ProfileScreen() {
   
   return (
     <View style={styles.container}>
-      <DashboardHeader username="Captain Mike" notifications={3} />
-      
       <ScrollView
         style={styles.scrollContainer}
         contentContainerStyle={[
@@ -125,7 +122,10 @@ export default function ProfileScreen() {
           <View style={styles.profileInfo}>
             <Text style={styles.profileName}>Captain Mike Johnson</Text>
             <Text style={styles.profileEmail}>mike.johnson@example.com</Text>
-            <TouchableOpacity style={styles.editProfileButton}>
+            <TouchableOpacity 
+              style={styles.editProfileButton}
+              onPress={() => router.push('/profile-creation')}
+            >
               <Text style={styles.editProfileText}>Edit Profile</Text>
             </TouchableOpacity>
           </View>
@@ -164,7 +164,7 @@ export default function ProfileScreen() {
             <SettingItem 
               icon={<User size={20} color={Colors.primary[700]} />}
               title="Personal Information"
-              onPress={() => console.log('Personal Info pressed')}
+              onPress={() => router.push('/profile-creation')}
             />
             <SettingItem 
               icon={<Ship size={20} color={Colors.primary[700]} />}
@@ -232,7 +232,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingTop: 20,
+    paddingTop: 40,
     paddingHorizontal: 16,
   },
   profileHeader: {

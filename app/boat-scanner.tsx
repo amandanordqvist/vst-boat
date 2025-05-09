@@ -8,29 +8,44 @@ import {
   Dimensions,
   Alert,
   ActivityIndicator,
-  Platform
+  Platform,
+  Pressable
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { router } from 'expo-router';
-import { Camera } from 'expo-camera';
-import { BarCodeScanner, BarCodeScannerResult } from 'expo-barcode-scanner';
-import { ScanLine, ChevronLeft, XCircle, LogIn, Ship } from 'lucide-react-native';
+import { ScanLine, ChevronLeft, XCircle, LogIn, Ship, QrCode } from 'lucide-react-native';
 import Colors from '@/constants/Colors';
 import { useAuth } from '@/hooks/useAuth';
 import { LinearGradient } from 'expo-linear-gradient';
+import Animated, { 
+  useSharedValue, 
+  useAnimatedStyle, 
+  withTiming, 
+  withRepeat,
+  withSequence,
+  withDelay,
+  runOnJS,
+  Easing,
+  FadeIn,
+  SlideInDown
+} from 'react-native-reanimated';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 const scannerSize = width * 0.7;
 const scannerBorderWidth = 2;
 
 export default function BoatScannerScreen() {
   const { associateBoat, isAuthenticated, user, verifyPhoneAndLogin } = useAuth();
-  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [scanned, setScanned] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [scanLinePosition, setScanLinePosition] = useState(0);
   const [scanMode, setScanMode] = useState<'login' | 'register'>('register');
-  const cameraRef = useRef(null);
+  
+  // Animation values
+  const scanLineY = useSharedValue(0);
+  const scannerScale = useSharedValue(1);
+  const scannerOpacity = useSharedValue(1);
+  const processingScale = useSharedValue(0.8);
+  const processingOpacity = useSharedValue(0);
 
   useEffect(() => {
     // Set scan mode based on query parameters or user authentication
@@ -45,191 +60,114 @@ export default function BoatScannerScreen() {
     }
   }, [isAuthenticated]);
 
+  // Start animations when component mounts
   useEffect(() => {
-    (async () => {
-      const { status } = await Camera.requestCameraPermissionsAsync();
-      setHasPermission(status === 'granted');
-    })();
-  }, []);
-
-  useEffect(() => {
-    // Animate the scan line
     if (!scanned) {
-      const animationInterval = setInterval(() => {
-        setScanLinePosition((prevPos) => {
-          if (prevPos >= scannerSize - 2) {
-            return 0;
-          }
-          return prevPos + 2;
-        });
-      }, 20);
+      // Animate scan line from top to bottom repeatedly
+      scanLineY.value = withRepeat(
+        withTiming(scannerSize - 2, { duration: 2000, easing: Easing.linear }),
+        -1, // Infinite repeat
+        true // Reverse
+      );
 
-      return () => clearInterval(animationInterval);
+      // Subtle scanner square pulse
+      scannerScale.value = withRepeat(
+        withSequence(
+          withTiming(1.02, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
+          withTiming(1, { duration: 1500, easing: Easing.inOut(Easing.ease) })
+        ),
+        -1,
+        false
+      );
     }
   }, [scanned]);
 
-  const handleBarCodeScanned = async ({ type, data }: BarCodeScannerResult) => {
+  // Update animation states when scanning/processing
+  useEffect(() => {
+    if (isProcessing) {
+      // Shrink and fade out scanner
+      scannerOpacity.value = withTiming(0.3, { duration: 400 });
+      scannerScale.value = withTiming(0.9, { duration: 400 });
+      
+      // Show processing animation
+      processingOpacity.value = withTiming(1, { duration: 400 });
+      processingScale.value = withTiming(1, { duration: 400, easing: Easing.out(Easing.back()) });
+    } else {
+      // Return to normal state
+      scannerOpacity.value = withTiming(1, { duration: 400 });
+      scannerScale.value = withTiming(1, { duration: 400 });
+      
+      processingOpacity.value = withTiming(0, { duration: 200 });
+      processingScale.value = withTiming(0.8, { duration: 300 });
+    }
+  }, [isProcessing]);
+
+  // Animated styles
+  const scanLineStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ translateY: scanLineY.value }]
+    };
+  });
+
+  const scannerFrameStyle = useAnimatedStyle(() => {
+    return {
+      opacity: scannerOpacity.value,
+      transform: [{ scale: scannerScale.value }]
+    };
+  });
+
+  const processingContainerStyle = useAnimatedStyle(() => {
+    return {
+      opacity: processingOpacity.value,
+      transform: [{ scale: processingScale.value }]
+    };
+  });
+
+  const simulateScan = () => {
     if (scanned || isProcessing) return;
     
     setScanned(true);
     setIsProcessing(true);
     
-    try {
-      // Parse the QR code data
-      let qrData;
-      try {
-        qrData = JSON.parse(data);
-      } catch (error) {
-        // If not JSON, try simple format
-        qrData = { id: data };
-      }
-      
-      if (!qrData) {
-        Alert.alert('Invalid QR Code', 'The scanned code does not contain valid information.');
-        setScanned(false);
-        setIsProcessing(false);
-        return;
-      }
-      
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
+    // Simulate processing delay
+    setTimeout(() => {
       if (scanMode === 'login') {
-        // Handle login via QR code
-        if (!qrData.authToken && !qrData.phone) {
-          Alert.alert('Invalid Login QR', 'This QR code cannot be used for login.');
-          setScanned(false);
-          setIsProcessing(false);
-          return;
-        }
-        
-        try {
-          // If QR contains auth token, use it directly
-          if (qrData.authToken) {
-            // Here you would implement direct token authentication
-            // For now, we'll simulate success
-            Alert.alert(
-              'Success', 
-              'Authenticated with token successfully.',
-              [{ text: 'Continue', onPress: () => router.replace('/(tabs)') }]
-            );
-          } 
-          // If QR contains phone and verification code
-          else if (qrData.phone && qrData.verificationCode) {
-            const success = await verifyPhoneAndLogin(
-              qrData.phone,
-              qrData.verificationCode
-            );
-            
-            if (success) {
-              Alert.alert(
-                'Success', 
-                'You have been successfully logged in.',
-                [{ text: 'Continue', onPress: () => router.replace('/(tabs)') }]
-              );
-            } else {
-              Alert.alert(
-                'Login Failed', 
-                'Could not authenticate with the provided QR code.',
-                [{ text: 'OK', onPress: () => setScanned(false) }]
-              );
-            }
-          } else {
-            throw new Error('Invalid QR format');
-          }
-        } catch (error) {
-          Alert.alert(
-            'Authentication Error',
-            'Failed to authenticate with QR code.',
-            [{ text: 'OK', onPress: () => setScanned(false) }]
-          );
-        }
+        Alert.alert(
+          'Success', 
+          'You have been successfully logged in.',
+          [{ text: 'Continue', onPress: () => router.replace('/(tabs)') }]
+        );
       } else {
-        // Register the boat with the user account
-        if (!qrData.id) {
-          Alert.alert('Invalid Boat QR', 'This QR code doesn\'t contain valid boat information.');
-          setScanned(false);
-          setIsProcessing(false);
-          return;
-        }
-        
-        const success = await associateBoat(qrData.id);
-        
-        if (success) {
-          Alert.alert(
-            'Success', 
-            'Boat successfully registered to your account!',
-            [{ text: 'Continue', onPress: () => router.replace('/(tabs)/vessel') }]
-          );
-        } else {
-          Alert.alert(
-            'Registration Failed', 
-            'Could not register the boat. Please try again.',
-            [{ text: 'OK', onPress: () => setScanned(false) }]
-          );
-        }
+        Alert.alert(
+          'Success', 
+          'Boat successfully registered to your account!',
+          [{ text: 'Continue', onPress: () => router.replace('/profile-creation') }]
+        );
       }
-    } catch (error) {
-      console.error('QR code processing error:', error);
-      Alert.alert(
-        'Error', 
-        'An error occurred while processing the QR code.',
-        [{ text: 'OK', onPress: () => setScanned(false) }]
-      );
-    } finally {
       setIsProcessing(false);
-    }
+    }, 2000);
   };
 
   const toggleScanMode = () => {
     setScanMode(prevMode => prevMode === 'login' ? 'register' : 'login');
   };
 
-  if (hasPermission === null) {
-    return (
-      <SafeAreaView style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={Colors.primary[600]} />
-        <Text style={styles.loadingText}>Requesting camera permission...</Text>
-      </SafeAreaView>
-    );
-  }
-
-  if (hasPermission === false) {
-    return (
-      <SafeAreaView style={styles.permissionContainer}>
-        <XCircle size={64} color={Colors.primary[600]} />
-        <Text style={styles.permissionTitle}>Camera Access Required</Text>
-        <Text style={styles.permissionText}>
-          Please grant camera access to scan boat QR codes.
-        </Text>
-        <TouchableOpacity 
-          style={styles.permissionButton} 
-          onPress={() => router.back()}
-        >
-          <Text style={styles.permissionButtonText}>Go Back</Text>
-        </TouchableOpacity>
-      </SafeAreaView>
-    );
-  }
-
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <BarCodeScanner
-        style={styles.camera}
-        type={BarCodeScanner.Constants.Type.back}
-        barCodeTypes={[
-          BarCodeScanner.Constants.BarCodeType.qr,
-          BarCodeScanner.Constants.BarCodeType.pdf417
-        ]}
-        onBarCodeScanned={scanned ? undefined : handleBarCodeScanned}
-      >
+      
+      {/* Mock camera background */}
+      <View style={styles.mockCamera}>
         <SafeAreaView style={styles.overlay}>
+          {/* Header */}
           <LinearGradient
             colors={['rgba(10, 31, 58, 0.9)', 'rgba(10, 31, 58, 0.5)', 'transparent']}
             style={styles.headerGradient}
           >
-            <View style={styles.header}>
+            <Animated.View 
+              entering={FadeIn.duration(300)}
+              style={styles.header}
+            >
               <TouchableOpacity 
                 style={styles.backButton} 
                 onPress={() => router.back()}
@@ -250,71 +188,85 @@ export default function BoatScannerScreen() {
                   }
                 </TouchableOpacity>
               )}
-            </View>
+            </Animated.View>
           </LinearGradient>
 
-          <View style={styles.scannerContainer}>
-            <View style={styles.scannerFrameContainer}>
+          {/* Scanner UI */}
+          <Pressable style={styles.scannerContainer} onPress={simulateScan}>
+            <Animated.View style={[styles.scannerFrameContainer, scannerFrameStyle]}>
+              {/* Scanner corners */}
+              <View style={[styles.scannerCorner, styles.topLeftCorner]} />
+              <View style={[styles.scannerCorner, styles.topRightCorner]} />
+              <View style={[styles.scannerCorner, styles.bottomLeftCorner]} />
+              <View style={[styles.scannerCorner, styles.bottomRightCorner]} />
+              
+              {/* QR code icon in center */}
               {!scanned && (
-                <View 
-                  style={[
-                    styles.scanLine, 
-                    { top: scanLinePosition }
-                  ]}
-                >
-                  <ScanLine size={20} color="#FFFFFF" />
+                <View style={styles.qrIconContainer}>
+                  <QrCode size={64} color="rgba(255, 255, 255, 0.2)" />
                 </View>
               )}
-            </View>
+              
+              {/* Scan line */}
+              {!scanned && (
+                <Animated.View style={[styles.scanLine, scanLineStyle]}>
+                  <LinearGradient
+                    colors={['rgba(255, 255, 255, 0)', 'rgba(120, 179, 235, 0.8)', 'rgba(255, 255, 255, 0)']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={styles.scanLineGradient}
+                  />
+                </Animated.View>
+              )}
+            </Animated.View>
 
-            {isProcessing && (
-              <View style={styles.processingContainer}>
-                <View style={styles.processingInner}>
-                  <ActivityIndicator size="large" color="#FFFFFF" />
-                  <Text style={styles.processingText}>
-                    {scanMode === 'login' ? 'Authenticating...' : 'Processing QR Code...'}
-                  </Text>
-                </View>
+            {/* Processing indicator */}
+            <Animated.View style={[styles.processingContainer, processingContainerStyle]}>
+              <View style={styles.processingInner}>
+                <ActivityIndicator size="large" color={Colors.primary[500]} />
+                <Text style={styles.processingText}>
+                  {scanMode === 'login' ? 'Logging in...' : 'Registering boat...'}
+                </Text>
               </View>
-            )}
-          </View>
+            </Animated.View>
+          </Pressable>
 
+          {/* Footer with instructions */}
           <LinearGradient
             colors={['transparent', 'rgba(10, 31, 58, 0.5)', 'rgba(10, 31, 58, 0.9)']}
             style={styles.footerGradient}
           >
-            <View style={styles.instructionsContainer}>
+            <Animated.View 
+              entering={SlideInDown.duration(500).delay(300)}
+              style={styles.instructionsContainer}
+            >
               <View style={styles.instructionsIcon}>
-                {scanMode === 'login' ? (
-                  <ScanLine size={24} color="#FFFFFF" />
-                ) : (
-                  <Ship size={24} color="#FFFFFF" />
-                )}
+                <QrCode size={24} color="#FFFFFF" />
               </View>
               <View style={styles.instructionsContent}>
                 <Text style={styles.instructionsTitle}>
-                  {scanMode === 'login' ? 'Scan Login QR Code' : 'Scan Boat QR Code'}
+                  {scanMode === 'login' ? 'Quick Login' : 'Register Your Boat'}
                 </Text>
                 <Text style={styles.instructionsText}>
                   {scanMode === 'login' 
-                    ? 'Position the login QR code within the frame to authenticate.' 
-                    : 'Position the QR code from your boat registration document within the frame to register it to your account.'
+                    ? 'Position your phone to scan the QR code on your vessel or companion app for instant access'
+                    : 'Scan the QR code located on your vessel documentation or hull to register it to your account'
                   }
                 </Text>
               </View>
-            </View>
-          
-            {scanned && !isProcessing && (
-              <TouchableOpacity 
-                style={styles.scanAgainButton} 
-                onPress={() => setScanned(false)}
-              >
-                <Text style={styles.scanAgainButtonText}>Scan Again</Text>
-              </TouchableOpacity>
-            )}
+            </Animated.View>
+            
+            <TouchableOpacity 
+              style={styles.scanButton} 
+              onPress={simulateScan}
+            >
+              <Text style={styles.scanButtonText}>
+                {isProcessing ? 'Processing...' : 'Tap to Simulate Scan'}
+              </Text>
+            </TouchableOpacity>
           </LinearGradient>
         </SafeAreaView>
-      </BarCodeScanner>
+      </View>
     </View>
   );
 }
@@ -324,8 +276,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#000',
   },
-  camera: {
+  mockCamera: {
     flex: 1,
+    backgroundColor: '#111',
   },
   overlay: {
     flex: 1,
@@ -374,15 +327,20 @@ const styles = StyleSheet.create({
     height: scannerSize,
     borderWidth: scannerBorderWidth,
     borderColor: 'rgba(255, 255, 255, 0.3)',
-    backgroundColor: 'transparent',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     position: 'relative',
     borderRadius: 24,
     overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  qrIconContainer: {
+    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   scannerCorner: {
     position: 'absolute',
-    width: 24,
-    height: 24,
     borderColor: Colors.primary[400],
     width: 40,
     height: 40,
@@ -464,7 +422,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     borderRadius: 16,
     padding: 16,
-    marginBottom: 20,
+    marginBottom: 16,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.2)',
   },
@@ -492,62 +450,18 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.8)',
     lineHeight: 20,
   },
-  scanAgainButton: {
-    backgroundColor: Colors.primary[600],
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 16,
-    marginTop: 16,
-    alignSelf: 'center',
-  },
-  scanAgainButtonText: {
-    fontFamily: 'Poppins-Medium',
-    fontSize: 16,
-    color: '#FFFFFF',
-  },
-  loadingContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.background,
-  },
-  loadingText: {
-    fontFamily: 'Poppins-Regular',
-    fontSize: 16,
-    color: Colors.neutral[700],
-    marginTop: 16,
-  },
-  permissionContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.background,
-    padding: 24,
-  },
-  permissionTitle: {
-    fontFamily: 'Poppins-SemiBold',
-    fontSize: 22,
-    color: Colors.neutral[900],
-    marginTop: 24,
-    marginBottom: 12,
-  },
-  permissionText: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 16,
-    color: Colors.neutral[700],
-    textAlign: 'center',
-    marginBottom: 24,
-    lineHeight: 24,
-  },
-  permissionButton: {
+  scanButton: {
     backgroundColor: Colors.primary[600],
     paddingVertical: 14,
-    paddingHorizontal: 32,
-    borderRadius: 12,
+    paddingHorizontal: 24,
+    borderRadius: 16,
+    marginHorizontal: 20,
+    marginBottom: 20,
+    alignItems: 'center',
   },
-  permissionButtonText: {
+  scanButtonText: {
     fontFamily: 'Poppins-Medium',
     fontSize: 16,
     color: '#FFFFFF',
-  },
+  }
 }); 

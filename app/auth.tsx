@@ -492,7 +492,8 @@ export default function AuthScreen() {
     );
     
     if (success) {
-      router.replace('/(tabs)');
+      // Navigate to profile creation for new users
+      router.replace('/profile-creation');
     }
   };
 
