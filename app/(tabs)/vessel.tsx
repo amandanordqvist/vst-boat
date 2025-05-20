@@ -1,20 +1,34 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, Image, Dimensions, Share, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { 
   Anchor, Ship, Ruler, Calendar, PenTool as Tool, FileText, LifeBuoy, Gauge, PlusCircle, 
   Copy, MapPin, Navigation2, Home, Settings, RefreshCw, Shield, Heart, MessageSquare, 
-  Edit3, Smartphone, Share2, Info, Wrench, Layers, Disc, Droplets
+  Edit3, Smartphone, Share2, Info, Wrench, Layers, Disc, Droplets, AlertTriangle,
+  Cloud, Check, Rotate3D, Facebook, Twitter, Instagram, Wind, ThermometerSun, X
 } from 'lucide-react-native';
 import Colors from '@/constants/Colors';
 import { router } from 'expo-router';
 import { useAuth } from '@/hooks/useAuth';
 import { LinearGradient } from 'expo-linear-gradient';
+import VesselHealthCard from '@/components/VesselHealthCard';
+import WeatherAdvisories, { defaultWeatherAlerts } from '@/components/WeatherAdvisories';
+import ActionMenu from '../../components/ActionMenu';
+import VesselDocumentsSection, { sampleDocuments } from '../../components/VesselDocumentsSection';
+import VesselMaintenanceSchedule, { sampleMaintenanceTasks } from '../../components/VesselMaintenanceSchedule';
+import VesselDetailsOverview, { sampleVesselData } from '../../components/VesselDetailsOverview';
 
 const { width } = Dimensions.get('window');
 
 // Sample vessel image URL - replace with real image when available
 const VESSEL_IMAGE = 'https://images.unsplash.com/photo-1605281317010-fe5ffe798166?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80';
+
+// Sample 3D model images (for demo)
+const MODEL_IMAGES = [
+  'https://images.unsplash.com/photo-1605281317010-fe5ffe798166?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80',
+  'https://images.unsplash.com/photo-1567899378494-47b22a2ae96a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8Ym9hdCUyMGNhYmlufGVufDB8fDB8fHww&auto=format&fit=crop&w=500&q=60',
+  'https://images.unsplash.com/photo-1520383278046-37a90eb02d79?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NXx8Ym9hdCUyMGxpZ2h0fGVufDB8fDB8fHww&auto=format&fit=crop&w=500&q=60',
+];
 
 interface VesselDetail {
   label: string;
@@ -22,6 +36,15 @@ interface VesselDetail {
   icon: React.ReactNode;
   section?: string;
 }
+
+// Health status data
+const healthStatus = {
+  overall: 92,
+  engine: 95,
+  hull: 90,
+  electrical: 88,
+  plumbing: 96
+};
 
 const vesselData: VesselDetail[] = [
   // Basic Information
@@ -173,18 +196,18 @@ const getVesselDataBySection = (section: string) => {
 export default function VesselScreen() {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
+  const [currentModelImage, setCurrentModelImage] = useState(0);
+  const [weatherAlerts, setWeatherAlerts] = useState(defaultWeatherAlerts);
   
   const handleRegisterBoat = () => {
     router.push('/boat-registration');
   };
 
   const handleEditVessel = () => {
-    // Navigate to edit vessel screen
     console.log('Edit vessel');
   };
 
   const handleViewDocuments = () => {
-    // Navigate to documents screen
     console.log('View documents');
   };
 
@@ -200,23 +223,52 @@ export default function VesselScreen() {
   };
 
   const handleContactManufacturer = () => {
-    // Contact manufacturer
     console.log('Contact manufacturer');
   };
 
-  const copyRegistrationNumber = async () => {
-    // Instead of using Clipboard API, show an alert for now
-    // We'll need to install expo-clipboard package later
-    Alert.alert(
-      "Registration Number",
-      "VST-2025-1234 (copied to clipboard)",
-      [{ text: "OK" }]
-    );
-    console.log('Registration number copied to clipboard');
+  // Dismiss a weather alert
+  const dismissAlert = (id: string) => {
+    setWeatherAlerts(weatherAlerts.filter(alert => alert.id !== id));
+  };
+  
+  // Rotate 3D model images
+  const rotateModel = (direction: 'next' | 'prev') => {
+    if (direction === 'next') {
+      setCurrentModelImage((currentModelImage + 1) % MODEL_IMAGES.length);
+    } else {
+      setCurrentModelImage(currentModelImage === 0 ? MODEL_IMAGES.length - 1 : currentModelImage - 1);
+    }
+  };
+  
+  // Define quick actions
+  const quickActions = [
+    { id: 'edit', icon: <Edit3 size={22} color="#4D7FBF" />, label: 'Edit' },
+    { id: 'documents', icon: <FileText size={22} color="#4D7FBF" />, label: 'Documents' },
+    { id: 'share', icon: <Share2 size={22} color="#4D7FBF" />, label: 'Share' },
+    { id: 'contact', icon: <MessageSquare size={22} color="#4D7FBF" />, label: 'Contact' }
+  ];
+  
+  // Handle quick action press
+  const handleActionPress = (actionId: string) => {
+    switch (actionId) {
+      case 'edit':
+        handleEditVessel();
+        break;
+      case 'documents':
+        handleViewDocuments();
+        break;
+      case 'share':
+        handleShareVessel();
+        break;
+      case 'contact':
+        handleContactManufacturer();
+        break;
+    }
   };
   
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={[styles.container, { paddingTop: 0 }]}>
+      <View style={styles.headerArea}>
       <View style={styles.headerBar}>
         <Text style={styles.screenTitle}>My Vessel</Text>
         <TouchableOpacity 
@@ -226,9 +278,14 @@ export default function VesselScreen() {
           <PlusCircle size={20} color={Colors.primary[600]} />
           <Text style={styles.registerButtonText}>Register Boat</Text>
         </TouchableOpacity>
+        </View>
       </View>
       
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.content} 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.contentContainer}
+      >
         {/* Cover Image and Vessel Name */}
         <View style={styles.coverContainer}>
           <Image
@@ -246,215 +303,63 @@ export default function VesselScreen() {
           </View>
         </View>
 
-        {/* Quick Actions */}
-        <View style={styles.quickActionsContainer}>
-          <TouchableOpacity style={styles.quickActionButton} onPress={handleEditVessel}>
-            <View style={styles.quickActionIcon}>
-              <Edit3 size={20} color={Colors.primary[600]} />
-            </View>
-            <Text style={styles.quickActionText}>Edit</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.quickActionButton} onPress={handleViewDocuments}>
-            <View style={styles.quickActionIcon}>
-              <FileText size={20} color={Colors.primary[600]} />
-            </View>
-            <Text style={styles.quickActionText}>Documents</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.quickActionButton} onPress={handleShareVessel}>
-            <View style={styles.quickActionIcon}>
-              <Share2 size={20} color={Colors.primary[600]} />
-            </View>
-            <Text style={styles.quickActionText}>Share</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.quickActionButton} onPress={handleContactManufacturer}>
-            <View style={styles.quickActionIcon}>
-              <MessageSquare size={20} color={Colors.primary[600]} />
-            </View>
-            <Text style={styles.quickActionText}>Contact</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* QR Code Card */}
-        <View style={styles.qrContainer}>
-          <View style={styles.qrContent}>
-            <View style={styles.qrImagePlaceholder}>
-              {/* Would replace with actual QR code image */}
-              <Text style={styles.qrPlaceholderText}>QR</Text>
-            </View>
-            <View style={styles.qrInfo}>
-              <Text style={styles.qrTitle}>Quick Access</Text>
-              <Text style={styles.qrDescription}>Scan to view vessel details on any device</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Basic Information Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Basic Information</Text>
-          <View style={styles.sectionContent}>
-            {getVesselDataBySection('basic').map((detail, index) => (
-              <View key={index} style={styles.detailRow}>
-                <View style={styles.detailIconContainer}>
-                  {detail.icon}
-                </View>
-                <View style={styles.detailTextContainer}>
-                  <Text style={styles.detailLabel}>{detail.label}</Text>
-                  <Text style={styles.detailValue}>{detail.value}</Text>
-                </View>
-                {detail.label === 'Registration Number' && (
-                  <TouchableOpacity style={styles.copyButton} onPress={copyRegistrationNumber}>
-                    <Copy size={16} color={Colors.neutral[500]} />
-                  </TouchableOpacity>
-                )}
-              </View>
-            ))}
-          </View>
-        </View>
-
-        {/* Physical Specifications Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Physical Specifications</Text>
-          <View style={styles.dimensionsCard}>
-            <Text style={styles.dimensionsTitle}>Dimensions</Text>
-            <View style={styles.dimensionsDiagram}>
-              <View style={styles.lengthIndicator}>
-                <Text style={styles.dimensionValue}>45ft</Text>
-                <View style={styles.lengthLine} />
-                <Text style={styles.dimensionLabel}>Length</Text>
-              </View>
-              <View style={styles.beamIndicator}>
-                <Text style={styles.dimensionValue}>14ft</Text>
-                <View style={styles.beamLine} />
-                <Text style={styles.dimensionLabel}>Beam</Text>
-              </View>
-            </View>
-          </View>
-          <View style={styles.sectionContent}>
-            {getVesselDataBySection('physical').map((detail, index) => (
-              <View key={index} style={styles.detailRow}>
-                <View style={styles.detailIconContainer}>
-                  {detail.icon}
-                </View>
-                <View style={styles.detailTextContainer}>
-                  <Text style={styles.detailLabel}>{detail.label}</Text>
-                  <Text style={styles.detailValue}>{detail.value}</Text>
-                </View>
-              </View>
-            ))}
-          </View>
-        </View>
-
-        {/* Systems Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Systems</Text>
-          <View style={styles.sectionContent}>
-            {getVesselDataBySection('systems').map((detail, index) => (
-              <View key={index} style={styles.detailRow}>
-                <View style={styles.detailIconContainer}>
-                  {detail.icon}
-                </View>
-                <View style={styles.detailTextContainer}>
-                  <Text style={styles.detailLabel}>{detail.label}</Text>
-                  <Text style={styles.detailValue}>{detail.value}</Text>
-                </View>
-              </View>
-            ))}
-          </View>
-        </View>
-
-        {/* Documentation Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Documentation</Text>
-          <View style={styles.sectionContent}>
-            {getVesselDataBySection('documentation').map((detail, index) => (
-              <View key={index} style={styles.detailRow}>
-                <View style={styles.detailIconContainer}>
-                  {detail.icon}
-                </View>
-                <View style={styles.detailTextContainer}>
-                  <Text style={styles.detailLabel}>{detail.label}</Text>
-                  <Text style={styles.detailValue}>{detail.value}</Text>
-                </View>
-              </View>
-            ))}
-          </View>
-        </View>
-
-        {/* Documents and Manuals */}
-        <View style={styles.section}>
-          <View style={styles.sectionTitleRow}>
-            <Text style={styles.sectionTitle}>Documents & Manuals</Text>
-            <TouchableOpacity>
-              <Text style={styles.viewAllText}>View All</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.documentsContainer}>
-            <TouchableOpacity style={styles.documentCard}>
-              <FileText size={24} color={Colors.primary[500]} />
-              <Text style={styles.documentTitle}>Registration</Text>
-              <Text style={styles.documentMeta}>PDF • 2.4 MB</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity style={styles.documentCard}>
-              <Tool size={24} color={Colors.primary[500]} />
-              <Text style={styles.documentTitle}>Manual</Text>
-              <Text style={styles.documentMeta}>PDF • 15.8 MB</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity style={styles.documentCard}>
-              <Shield size={24} color={Colors.primary[500]} />
-              <Text style={styles.documentTitle}>Insurance</Text>
-              <Text style={styles.documentMeta}>PDF • 1.2 MB</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.documentCard}>
-              <Wrench size={24} color={Colors.primary[500]} />
-              <Text style={styles.documentTitle}>Service</Text>
-              <Text style={styles.documentMeta}>PDF • 3.5 MB</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Maintenance Summary */}
-        <View style={styles.section}>
-          <View style={styles.sectionTitleRow}>
-            <Text style={styles.sectionTitle}>Maintenance Summary</Text>
-            <TouchableOpacity>
-              <Text style={styles.viewAllText}>View History</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.maintenanceCard}>
-            <View style={styles.maintenanceHeader}>
-              <View style={styles.maintenanceIconContainer}>
-                <Wrench size={20} color={Colors.primary[600]} />
-              </View>
-              <View>
-                <Text style={styles.maintenanceTitle}>Last Service</Text>
-                <Text style={styles.maintenanceDate}>March 5, 2025</Text>
-              </View>
-            </View>
-            <View style={styles.maintenanceDivider} />
-            <View style={styles.maintenanceStats}>
-              <View style={styles.maintenanceStatItem}>
-                <Text style={styles.maintenanceStatValue}>352</Text>
-                <Text style={styles.maintenanceStatLabel}>Engine Hours</Text>
-              </View>
-              <View style={styles.maintenanceStatItem}>
-                <Text style={styles.maintenanceStatValue}>95%</Text>
-                <Text style={styles.maintenanceStatLabel}>Health</Text>
-              </View>
-              <View style={styles.maintenanceStatItem}>
-                <Text style={styles.maintenanceStatValue}>48</Text>
-                <Text style={styles.maintenanceStatLabel}>Days to Next</Text>
-              </View>
-            </View>
-          </View>
-        </View>
+        {/* Vessel Health Card */}
+        <VesselHealthCard 
+          overallHealth={healthStatus.overall}
+          engineHealth={healthStatus.engine}
+          hullHealth={healthStatus.hull}
+          electricalHealth={healthStatus.electrical}
+          plumbingHealth={healthStatus.plumbing}
+        />
         
-        <View style={styles.spacer} />
+        {/* Quick Action Menu */}
+        <ActionMenu actions={quickActions} onPress={handleActionPress} />
+
+        {/* Weather Advisories */}
+        <WeatherAdvisories alerts={weatherAlerts} onDismiss={dismissAlert} />
+        
+        {/* Vessel Details Overview */}
+        <VesselDetailsOverview vesselData={sampleVesselData} />
+        
+        {/* Vessel Documents Section */}
+        <VesselDocumentsSection 
+          documents={sampleDocuments}
+          onViewDocument={(id) => console.log('View document:', id)}
+          onDownloadDocument={(id) => console.log('Download document:', id)}
+        />
+        
+        {/* Vessel Maintenance Schedule */}
+        <VesselMaintenanceSchedule 
+          tasks={sampleMaintenanceTasks}
+          onTaskPress={(id) => console.log('Task pressed:', id)}
+          onCompleteTask={(id) => console.log('Complete task:', id)}
+        />
+        
+        {/* 3D Model Section */}
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionTitle}>3D Model</Text>
+          <View style={styles.modelContainer}>
+              <Image 
+                source={{ uri: MODEL_IMAGES[currentModelImage] }}
+                style={styles.modelImage}
+                resizeMode="cover"
+              />
+              <View style={styles.modelControls}>
+                <TouchableOpacity 
+                  style={styles.modelControlButton}
+                  onPress={() => rotateModel('prev')}
+                >
+                  <Rotate3D size={16} color="#FFF" style={{transform: [{rotate: '-90deg'}]}} />
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={styles.modelControlButton}
+                  onPress={() => rotateModel('next')}
+                >
+                  <Rotate3D size={16} color="#FFF" style={{transform: [{rotate: '90deg'}]}} />
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
       </ScrollView>
     </View>
   );
@@ -465,44 +370,51 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.neutral[50],
   },
+  headerArea: {
+    backgroundColor: Colors.background,
+    paddingTop: Platform.OS === 'ios' ? 48 : 8,
+    borderBottomWidth: 0,
+    zIndex: 10,
+  },
   headerBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: Colors.background,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.neutral[100],
-    zIndex: 10,
+    paddingVertical: 16,
   },
   screenTitle: {
     fontFamily: 'Poppins-SemiBold',
-    fontSize: 18,
+    fontSize: 28,
     color: Colors.neutral[900],
   },
   registerButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 122, 255, 0.1)',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
+    backgroundColor: '#E8EFF4',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 16,
   },
   registerButtonText: {
     fontFamily: 'Poppins-Medium',
     fontSize: 14,
     color: Colors.primary[600],
-    marginLeft: 6,
+    marginLeft: 8,
   },
   content: {
     flex: 1,
   },
+  contentContainer: {
+    paddingBottom: 24,
+  },
   // Cover image styles
   coverContainer: {
-    height: 240,
+    height: 280,
     width: '100%',
     position: 'relative',
+    borderRadius: 0,
+    overflow: 'hidden',
   },
   coverImage: {
     width: '100%',
@@ -513,18 +425,18 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: '50%',
+    height: '60%',
   },
   coverContent: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    padding: 20,
+    padding: 24,
   },
   vesselName: {
     fontFamily: 'Poppins-SemiBold',
-    fontSize: 28,
+    fontSize: 36,
     color: '#FFFFFF',
     marginBottom: 4,
     textShadowColor: 'rgba(0, 0, 0, 0.75)',
@@ -533,337 +445,53 @@ const styles = StyleSheet.create({
   },
   vesselType: {
     fontFamily: 'Inter-Medium',
-    fontSize: 16,
+    fontSize: 20,
     color: 'rgba(255, 255, 255, 0.9)',
     textShadowColor: 'rgba(0, 0, 0, 0.75)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
   },
-  // Quick action buttons
-  quickActionsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    padding: 16,
-    backgroundColor: Colors.background,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.neutral[100],
-  },
-  quickActionButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  quickActionIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: Colors.primary[100],
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 8,
-  },
-  quickActionText: {
-    fontFamily: 'Inter-Medium',
-    fontSize: 12,
-    color: Colors.neutral[700],
-  },
-  // QR code section
-  qrContainer: {
-    margin: 16,
-    backgroundColor: Colors.background,
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  qrContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  qrImagePlaceholder: {
-    width: 80,
-    height: 80,
-    backgroundColor: Colors.neutral[200],
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 16,
-  },
-  qrPlaceholderText: {
-    fontFamily: 'Inter-Bold',
-    fontSize: 16,
-    color: Colors.neutral[600],
-  },
-  qrInfo: {
-    flex: 1,
-  },
-  qrTitle: {
-    fontFamily: 'Poppins-SemiBold',
-    fontSize: 16,
-    color: Colors.neutral[900],
-    marginBottom: 4,
-  },
-  qrDescription: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 14,
-    color: Colors.neutral[600],
-    lineHeight: 20,
-  },
-  // Section styles
-  section: {
-    padding: 16,
-    marginBottom: 8,
-    backgroundColor: Colors.background,
-  },
-  sectionTitleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  // Section container
+  sectionContainer: {
+    marginHorizontal: 16,
     marginBottom: 16,
   },
   sectionTitle: {
     fontFamily: 'Poppins-SemiBold',
-    fontSize: 18,
+    fontSize: 24,
     color: Colors.neutral[800],
-    marginBottom: 16,
+    marginBottom: 12,
   },
-  viewAllText: {
-    fontFamily: 'Inter-SemiBold',
-    fontSize: 14,
-    color: Colors.primary[600],
+  // 3D model styles
+  modelContainer: {
+    position: 'relative',
+    borderRadius: 20,
+    overflow: 'hidden',
+    backgroundColor: Colors.background,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
-  sectionContent: {
-    backgroundColor: Colors.neutral[50],
-    borderRadius: 12,
-    padding: 12,
+  modelImage: {
+    width: '100%',
+    height: 200,
+    borderRadius: 20,
   },
-  // Detail row styles
-  detailRow: {
+  modelControls: {
+    position: 'absolute',
+    bottom: 12,
+    right: 12,
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.neutral[100],
   },
-  detailIconContainer: {
+  modelControlButton: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: Colors.neutral[100],
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
-  },
-  detailTextContainer: {
-    flex: 1,
-  },
-  detailLabel: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 13,
-    color: Colors.neutral[500],
-    marginBottom: 2,
-  },
-  detailValue: {
-    fontFamily: 'Inter-SemiBold',
-    fontSize: 15,
-    color: Colors.neutral[900],
-  },
-  copyButton: {
-    padding: 8,
-  },
-  // Dimensions visualization
-  dimensionsCard: {
-    backgroundColor: Colors.neutral[50],
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-  },
-  dimensionsTitle: {
-    fontFamily: 'Inter-SemiBold',
-    fontSize: 16,
-    color: Colors.neutral[800],
-    marginBottom: 16,
-  },
-  dimensionsDiagram: {
-    position: 'relative',
-    height: 100,
-    alignItems: 'center',
-  },
-  lengthIndicator: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-  },
-  beamIndicator: {
-    position: 'absolute',
-    top: 50,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-  },
-  dimensionValue: {
-    fontFamily: 'Inter-Bold',
-    fontSize: 14,
-    color: Colors.primary[600],
-    marginBottom: 4,
-  },
-  dimensionLabel: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 12,
-    color: Colors.neutral[600],
-    marginTop: 4,
-  },
-  lengthLine: {
-    width: '80%',
-    height: 2,
-    backgroundColor: Colors.primary[500],
-  },
-  beamLine: {
-    width: '40%',
-    height: 2,
-    backgroundColor: Colors.primary[500],
-  },
-  // Documents section
-  documentsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  documentCard: {
-    backgroundColor: Colors.neutral[50],
-    borderRadius: 12,
-    padding: 16,
-    width: '48%',
-    alignItems: 'center',
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  documentTitle: {
-    fontFamily: 'Inter-Medium',
-    fontSize: 14,
-    color: Colors.neutral[800],
-    marginTop: 8,
-    marginBottom: 4,
-  },
-  documentMeta: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 12,
-    color: Colors.neutral[500],
-  },
-  // Maintenance summary
-  maintenanceCard: {
-    backgroundColor: Colors.neutral[50],
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  maintenanceHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  maintenanceIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: Colors.primary[100],
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  maintenanceTitle: {
-    fontFamily: 'Inter-SemiBold',
-    fontSize: 16,
-    color: Colors.neutral[800],
-  },
-  maintenanceDate: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 14,
-    color: Colors.neutral[600],
-  },
-  maintenanceDivider: {
-    height: 1,
-    backgroundColor: Colors.neutral[200],
-    marginBottom: 16,
-  },
-  maintenanceStats: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  maintenanceStatItem: {
-    alignItems: 'center',
-  },
-  maintenanceStatValue: {
-    fontFamily: 'Poppins-Bold',
-    fontSize: 18,
-    color: Colors.neutral[900],
-  },
-  maintenanceStatLabel: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 12,
-    color: Colors.neutral[600],
-    marginTop: 4,
-  },
-  // Spacer at the bottom
-  spacer: {
-    height: 40,
-  },
-  // Old styles maintained for compatibility
-  vesselImagePlaceholder: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: 'rgba(0, 122, 255, 0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-  },
-  detailsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  detailCard: {
-    backgroundColor: Colors.background,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    width: '48%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  iconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(0, 122, 255, 0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 8,
-  },
-  emptyStateContainer: {
-    padding: 20,
-    alignItems: 'center',
-  },
-  emptyStateText: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 14,
-    color: Colors.neutral[600],
-    textAlign: 'center',
-    lineHeight: 22,
+    marginLeft: 8,
   },
 });

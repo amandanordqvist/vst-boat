@@ -1,6 +1,7 @@
 const Colors = {
   // Main theme colors
   primary: {
+    50: '#F0F5FA', // Very lightest navy tint
     100: '#E6EEF5', // Lightest navy tint
     200: '#C7D8E8',
     300: '#A4C1D7',

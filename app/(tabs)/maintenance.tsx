@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform } from '
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Calendar, Clock, CheckCircle2, AlertCircle, XCircle, Plus, ChevronRight } from 'lucide-react-native';
 import Colors from '@/constants/Colors';
-import DashboardHeader from '@/components/DashboardHeader';
 
 type MaintenanceStatus = 'completed' | 'upcoming' | 'overdue';
 
@@ -114,13 +113,14 @@ export default function MaintenanceScreen() {
   
   return (
     <View style={styles.container}>
-      <DashboardHeader username="Captain" notifications={3} />
-      
       <ScrollView
         style={styles.scrollContainer}
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingBottom: 16 + (Platform.OS !== 'web' ? insets.bottom : 0) }
+          { 
+            paddingTop: 16 + (Platform.OS !== 'web' ? insets.top : 0),
+            paddingBottom: 16 + (Platform.OS !== 'web' ? insets.bottom : 0) 
+          }
         ]}
         showsVerticalScrollIndicator={false}
       >
@@ -256,8 +256,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingTop: 30,
-    paddingBottom: 20,
+    paddingHorizontal: 16,
   },
   headerSection: {
     flexDirection: 'row',

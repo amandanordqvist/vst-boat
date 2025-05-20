@@ -1,9 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Calendar, Wind, Droplets, Compass, Sun, Cloud } from 'lucide-react-native';
+import { Wind, Droplets, Compass, Calendar, Sun, Cloud } from 'lucide-react-native';
 import Colors from '@/constants/Colors';
-import DashboardHeader from '@/components/DashboardHeader';
 
 // Sample weather forecast data
 const weatherForecast = [
@@ -82,13 +81,14 @@ export default function WeatherScreen() {
   
   return (
     <View style={styles.container}>
-      <DashboardHeader username="Captain" notifications={3} />
-      
       <ScrollView
         style={styles.scrollContainer}
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingBottom: 16 + (Platform.OS !== 'web' ? insets.bottom : 0) }
+          { 
+            paddingTop: 16 + (Platform.OS !== 'web' ? insets.top : 0),
+            paddingBottom: 16 + (Platform.OS !== 'web' ? insets.bottom : 0) 
+          }
         ]}
         showsVerticalScrollIndicator={false}
       >
@@ -228,7 +228,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingTop: 30,
     paddingHorizontal: 16,
   },
   currentWeatherCard: {

@@ -15,6 +15,7 @@ import {
   Inter_500Medium,
 } from '@expo-google-fonts/inter';
 import { AuthProvider } from '@/hooks/useAuth';
+import { UserRoleProvider } from '@/contexts/UserRoleContext';
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -46,16 +47,18 @@ export default function RootLayout() {
 
   return (
     <AuthProvider>
-      <StatusBar style="light" />
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="auth" />
-        <Stack.Screen name="registration" />
-        <Stack.Screen name="boat-registration" />
-        <Stack.Screen name="boat-scanner" />
-        <Stack.Screen name="profile-creation" />
-        <Stack.Screen name="+not-found" />
-      </Stack>
+      <UserRoleProvider initialRole="owner">
+        <StatusBar style="light" />
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="auth" />
+          <Stack.Screen name="registration" />
+          <Stack.Screen name="boat-registration" />
+          <Stack.Screen name="boat-scanner" />
+          <Stack.Screen name="profile-creation" />
+          <Stack.Screen name="+not-found" />
+        </Stack>
+      </UserRoleProvider>
     </AuthProvider>
   );
 }
