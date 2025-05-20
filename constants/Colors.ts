@@ -11,59 +11,87 @@ const Colors = {
     800: '#132F52',
     900: '#0A1F3A',
   },
-  secondary: {
-    100: '#EEF6FF',
-    200: '#E0EDFA', // Light navy for secondary elements
-    300: '#C0D7EA',
-    400: '#9BBAD5',
-    500: '#6A98C0',
-    600: '#3D6A9C',
-    700: '#2A5580',
-    800: '#1A406A',
-    900: '#132F52',
+   // Sekundära färger - kompletterar primärfärgerna
+   secondary: {
+    50: '#F5FAFF',
+    100: '#E8F4FF',
+    200: '#D1E9FF',
+    300: '#A7D6FF',
+    400: '#7CC2FF',
+    500: '#3AA0FF', // Ljus havsblå
+    600: '#2E81CC',
+    700: '#1D5C9F',
+    800: '#143F6F',
+    900: '#0E2C4E',
   },
+  
+  // Accent färger - mer distinkt och kompletterande till marintemat
   accent: {
-    100: '#FFF5E5',
-    200: '#FFEAC7',
-    300: '#FFDCA0',
-    400: '#FFC670',
-    500: '#FF9500', // Accent orange for warnings and CTAs
-    600: '#E68600',
-    700: '#CC7700',
-    800: '#A35F00',
-    900: '#7A4700',
+    50: '#FFF9EB',
+    100: '#FFF3D6',
+    200: '#FFE7AD',
+    300: '#FFD773',
+    400: '#FFCA45',
+    500: '#FFBC1F', // Mer vibrerande gul-guld för bättre synlighet
+    600: '#E6A500',
+    700: '#B38000',
+    800: '#805C00',
+    900: '#664700',
   },
-  // Status colors
+  
+  // Status färger - tydligare och mer moderna
   status: {
-    success: '#43A047', // Green for completed items
-    warning: '#FF9500', // Orange for warnings
-    error: '#E53935', // Red for critical alerts
-    info: '#1A406A', // Navy blue for information
+    success: '#34C759', // Apple-grön - mer vibrerande
+    warning: '#FF9500', // Apple-orange
+    error: '#FF3B30',   // Apple-röd - mer synlig
+    info: '#3AA0FF',    // Ljusare blå för information
+    pending: '#5856D6',  // Lila för väntande åtgärder
   },
-  // Neutral tones
+  
+  // Priority colors - mer intuitiva och distinkta
+  priority: {
+    critical: '#FF3B30', // Tydlig röd för kritisk
+    high: '#FF9500',     // Orange för hög
+    medium: '#FFCC00',   // Gul för medium
+    low: '#34C759',      // Grön för låg
+  },
+  
+  // Neutral tones - mer blåaktiga för att passa marintemat
   neutral: {
-    50: '#F9FAFB',
-    100: '#F3F4F6',
-    200: '#E5E7EB',
-    300: '#D1D5DB',
-    400: '#9CA3AF',
-    500: '#667085', // Secondary text color
-    600: '#4B5563',
-    700: '#374151',
-    800: '#1F2937',
-    900: '#111827',
+    50: '#F7FAFD',
+    100: '#EEF4F9',
+    200: '#DCE7F0',
+    300: '#C5D4E0',
+    400: '#A3B8C9',
+    500: '#7D97AD', // Mer blågrå för sekundär text
+    600: '#5C738C',
+    700: '#435669',
+    800: '#2D3A48',
+    900: '#1A222C',
   },
-  // Special colors
+  
+  // Water colors - mer levande och dynamiska vattenfärger
   water: {
-    light: '#E6EEF5',
-    medium: '#6A98C0',
-    deep: '#1A406A',
-    dark: '#132F52',
+    lightest: '#F0F7FF', // Mycket ljust vatten
+    light: '#C3DFFC',    // Ljust vatten
+    medium: '#68A7EA',   // Mellanblått vatten
+    deep: '#1E4DA1',     // Djupt vatten
+    dark: '#0C2548',     // Mycket djupt vatten
   },
-  background: '#FFFFFF', // White for clean backgrounds
-  card: 'rgba(255, 255, 255, 0.9)',
-  text: '#1F2937',
-  border: '#E6EEF5', // Light navy for borders
+  
+  // Gradients för marina element
+  gradients: {
+    waterSurface: ['#3AA0FF', '#1E4DA1'],
+    sunset: ['#FF9500', '#FF3B30'],
+    morning: ['#F0F7FF', '#98C7F5'],
+  },
+  
+  // Övriga färger
+  background: '#FFFFFF',               // Vit bakgrund
+  card: 'rgba(255, 255, 255, 0.95)',   // Något mer ogenomskinlig
+  text: '#1A222C',                     // Mörkare text för bättre läsbarhet
+  border: '#DCE7F0',                   // Mer synlig gräns
+  shadow: 'rgba(12, 37, 72, 0.08)',    // Marinblå skugga
 };
 
 export default Colors;

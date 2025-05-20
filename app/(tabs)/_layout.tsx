@@ -35,11 +35,11 @@ export default function TabLayout() {
     const visibleRoutes = state.routes.filter(route => VISIBLE_TABS.includes(route.name));
     
     return (
-      <View style={[styles.tabBar, { paddingBottom: isIOS ? insets.bottom : 16 }]}>
+      <View style={[styles.tabBar, { paddingBottom: isIOS ? insets.bottom : 18 }]}>
         {isIOS && (
           <View style={styles.tabBarBackground}>
             <LinearGradient
-              colors={['rgba(255, 255, 255, 0.95)', 'rgba(255, 255, 255, 0.9)']}
+              colors={['rgba(255, 255, 255, 0.95)', 'rgb(255, 255, 255)']}
               style={{ flex: 1 }}
             />
           </View>
@@ -201,22 +201,22 @@ export default function TabLayout() {
 const styles = StyleSheet.create({
   tabBar: {
     position: 'absolute',
-    bottom: Platform.OS === 'ios' ? 20 : 0,
+    bottom: Platform.OS === 'ios' ? 16 : 0,
     left: Platform.OS === 'ios' ? 16 : 0,
     right: Platform.OS === 'ios' ? 16 : 0,
-    height: Platform.OS === 'ios' ? 88 : 70,
+    height: Platform.OS === 'ios' ? 66 : 50,
     backgroundColor: Platform.OS === 'ios' ? 'transparent' : 'rgba(255, 255, 255, 0.97)',
     flexDirection: 'row',
     borderRadius: Platform.OS === 'ios' ? 28 : 0,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 8,
+    shadowOpacity: 0.16,
+    shadowRadius: 10,
+    elevation: 10,
     paddingTop: 10,
     paddingHorizontal: 12,
     borderTopWidth: Platform.OS === 'ios' ? 0 : 1,
-    borderTopColor: Platform.OS === 'ios' ? 'transparent' : 'rgba(0, 0, 0, 0.05)',
+    borderTopColor: Platform.OS === 'ios' ? 'transparent' : 'rgb(255, 255, 255)',
   },
   tabBarBackground: {
     position: 'absolute',
@@ -226,7 +226,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     borderRadius: 28,
     overflow: 'hidden',
-    borderWidth: 1,
+    borderWidth: 0,
     borderColor: 'rgba(0, 0, 0, 0.05)',
   },
   tabItem: {
@@ -237,26 +237,26 @@ const styles = StyleSheet.create({
   tabButton: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 8,
-    borderRadius: 16,
+    paddingVertical: 10,
+    borderRadius: 30,
     width: '100%',
   },
   tabButtonActive: {
     backgroundColor: `${Colors.primary[100]}`,
   },
   tabLabel: {
-    fontSize: 12,
+    fontSize: 10,
     fontFamily: Platform.OS === 'ios' ? 'San Francisco' : 'Roboto',
-    fontWeight: '600',
+    fontWeight: '400',
     marginTop: 4,
     textAlign: 'center',
   },
   activeTabLabel: {
     color: Colors.primary[700],
-    fontSize: 12,
+    fontSize: 10,
   },
   inactiveTabLabel: {
     color: Colors.neutral[500],
-    fontSize: 11,
+    fontSize: 10,
   }
 });

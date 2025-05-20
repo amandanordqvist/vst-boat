@@ -497,6 +497,20 @@ export default function AuthScreen() {
     }
   };
 
+  // Example phone number helper
+  const fillTestCredentials = () => {
+    setPhone('+46701234567'); // This is one of the mock users
+    setStep(2); // Move to verification step
+  };
+
+  const handleAutoVerify = () => {
+    setVerificationCode('123456');
+    // Let's use setTimeout to ensure the state is updated before verification
+    setTimeout(() => {
+      handleVerifyCode();
+    }, 100);
+  };
+
   const formAnimatedStyle = useAnimatedStyle(() => {
     return {
       opacity: formOpacity.value,
@@ -537,6 +551,14 @@ export default function AuthScreen() {
         disabled={phone.length < 8}
         isLoading={isLoading}
       />
+
+      {/* Quick Test Login Button */}
+      <TouchableOpacity 
+        style={styles.quickLoginButton}
+        onPress={fillTestCredentials}
+      >
+        <Text style={styles.quickLoginText}>Quick Login (Development Only)</Text>
+      </TouchableOpacity>
 
       <View style={styles.dividerContainer}>
         <View style={styles.divider} />
@@ -594,6 +616,22 @@ export default function AuthScreen() {
         disabled={verificationCode.length !== 6}
         isLoading={isLoading}
       />
+
+      {/* Quick Verify Button */}
+      <TouchableOpacity
+        style={{
+          padding: 12,
+          alignItems: 'center',
+          marginBottom: 12,
+          backgroundColor: Colors.primary[100],
+          borderRadius: 8,
+        }}
+        onPress={handleAutoVerify}
+      >
+        <Text style={{ color: Colors.primary[700], fontWeight: '500' }}>
+          Quick Verify (Dev Only)
+        </Text>
+      </TouchableOpacity>
       
       <AnimatedButton
         text="Change phone number"
@@ -1155,5 +1193,18 @@ const styles = StyleSheet.create({
   learnMoreLink: {
     fontFamily: 'Inter-Medium',
     color: Colors.primary[600],
+  },
+  quickLoginButton: {
+    padding: 12,
+    backgroundColor: Colors.primary[100],
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  quickLoginText: {
+    fontFamily: 'Poppins-Medium',
+    fontSize: 15,
+    color: Colors.primary[700],
   },
 }); 

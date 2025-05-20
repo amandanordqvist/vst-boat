@@ -1,18 +1,20 @@
 import React from 'react';
 import { View, Text, StyleSheet, Platform, TouchableOpacity, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Bell, ChevronRight, Search, ChevronDown, MapPin } from 'lucide-react-native';
+import { Bell, ChevronRight, Search, ChevronDown, MapPin, ChevronLeft } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '@/constants/Colors';
 import { router } from 'expo-router';
 import useProfileNavigation from '@/hooks/useProfileNavigation';
 
 interface DashboardHeaderProps {
-  username: string;
-  notifications: number;
+  username?: string;
+  notifications?: number;
   vesselName?: string;
   vesselStatus?: string;
   vesselLocation?: string;
+  title?: string;
+  showBackButton?: boolean;
 }
 
 // Consistent design values
@@ -24,7 +26,9 @@ export default function DashboardHeader({
   notifications, 
   vesselName = 'Sea Breeze', 
   vesselStatus = 'Docked', 
-  vesselLocation = 'Marina Bay' 
+  vesselLocation = 'Marina Bay',
+  title,
+  showBackButton = false
 }: DashboardHeaderProps) {
   const isWeb = Platform.OS === 'web';
   const { navigateToProfile } = useProfileNavigation();
@@ -32,6 +36,27 @@ export default function DashboardHeader({
   const handleVesselPress = () => {
     router.push('/(tabs)/vessel');
   };
+  
+  const handleBack = () => {
+    router.back();
+  };
+  
+  // If we have a title, show simplified header
+  if (title) {
+    return (
+      <View style={styles.simplifiedContainer}>
+        <View style={styles.simplifiedHeader}>
+          {showBackButton && (
+            <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+              <ChevronLeft size={24} color={Colors.neutral[800]} />
+            </TouchableOpacity>
+          )}
+          <Text style={styles.headerTitle}>{title}</Text>
+          <View style={showBackButton ? { width: 24 } : undefined} />
+        </View>
+      </View>
+    );
+  }
   
   return (
     <View style={styles.outerContainer}>
@@ -66,7 +91,7 @@ export default function DashboardHeader({
               </TouchableOpacity>
               <TouchableOpacity style={styles.iconWrapper}>
                 <Bell color="#fff" size={20} />
-                {notifications > 0 && (
+                {notifications && notifications > 0 && (
                   <View style={styles.notificationBadge}>
                     <Text style={styles.notificationText}>{notifications}</Text>
                   </View>
@@ -266,5 +291,30 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     marginTop: -12,
     zIndex: 1,
+  },
+  simplifiedContainer: {
+    width: '100%',
+    backgroundColor: Colors.background,
+    paddingTop: Platform.OS === 'ios' ? 50 : 16,
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.neutral[200],
+  },
+  simplifiedHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: Colors.neutral[900],
+    fontFamily: Platform.OS === 'ios' ? 'San Francisco' : 'Roboto',
+    flex: 1,
+    textAlign: 'center',
+  },
+  backButton: {
+    padding: 4,
   },
 });

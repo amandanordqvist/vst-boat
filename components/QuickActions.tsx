@@ -27,7 +27,7 @@ function QuickAction({ icon, title, onPress }: QuickActionProps) {
 
 export default function QuickActions() {
   const triggerHapticFeedback = () => {
-    if (Platform.OS !== 'web') {
+    if (Platform.OS !== 'ios') {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     }
   };
@@ -40,7 +40,7 @@ export default function QuickActions() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Quick Actions</Text>
+      <Text style={styles.title}></Text>
       <View style={styles.actionsContainer}>
         <QuickAction 
           icon={<Ship size={24} color="#FFFFFF" />}
@@ -70,7 +70,7 @@ export default function QuickActions() {
 const styles = StyleSheet.create({
   container: {
     marginVertical: 16,
-    marginHorizontal: 16,
+    marginHorizontal: 18,
     backgroundColor: Colors.background,
     borderRadius: 12,
     padding: 16,
@@ -82,10 +82,10 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: Platform.OS === 'ios' ? 'San Francisco' : 'Roboto',
-    fontSize: 20, // H2 size
+    fontSize: 12, // H2 size
     fontWeight: '600',
     color: Colors.neutral[900],
-    marginBottom: 16,
+    marginBottom: 12,
   },
   actionsContainer: {
     flexDirection: 'row',
@@ -94,12 +94,12 @@ const styles = StyleSheet.create({
   actionButton: {
     alignItems: 'center',
     justifyContent: 'center',
-    width: '22%',
+    width: '26%',
   },
   iconContainer: {
     width: 56,
     height: 56,
-    borderRadius: 12,
+    borderRadius: 16,
     backgroundColor: Colors.primary[700],
     alignItems: 'center',
     justifyContent: 'center',
@@ -108,11 +108,11 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
-    elevation: 2,
+    elevation: 3,
   },
   actionText: {
     fontFamily: Platform.OS === 'ios' ? 'San Francisco' : 'Roboto',
-    fontSize: 12, // Label text
+    fontSize: 10, // Label text
     fontWeight: '500',
     color: Colors.neutral[800],
     textAlign: 'center',

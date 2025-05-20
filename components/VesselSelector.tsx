@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { ChevronDown } from 'lucide-react-native';
 import Colors from '@/constants/Colors';
-import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 
 type Vessel = {
   id: string;
@@ -19,24 +18,14 @@ const vessels: Vessel[] = [
 export default function VesselSelector() {
   const [selected, setSelected] = useState(vessels[0]);
   const [open, setOpen] = useState(false);
-  
-  const rotation = useSharedValue(0);
-  
-  const iconStyle = useAnimatedStyle(() => {
-    return {
-      transform: [{ rotate: `${rotation.value}deg` }],
-    };
-  });
 
   const toggleDropdown = () => {
     setOpen(!open);
-    rotation.value = withTiming(open ? 0 : 180, { duration: 300 });
   };
 
   const selectVessel = (vessel: Vessel) => {
     setSelected(vessel);
     setOpen(false);
-    rotation.value = withTiming(0, { duration: 300 });
   };
 
   return (
@@ -50,9 +39,9 @@ export default function VesselSelector() {
           <Text style={styles.vesselType}>{selected.type}</Text>
           <Text style={styles.vesselName}>{selected.name}</Text>
         </View>
-        <Animated.View style={iconStyle}>
+        <View style={{ transform: [{ rotate: open ? '180deg' : '0deg' }] }}>
           <ChevronDown color="#1A5F9C" size={24} />
-        </Animated.View>
+        </View>
       </TouchableOpacity>
       
       {open && (

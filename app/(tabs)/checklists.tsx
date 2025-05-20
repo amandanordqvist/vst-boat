@@ -1,88 +1,132 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Platform, TextInput, Switch } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Calendar, Clock, Navigation, Map, Wind, Droplets, Sun, Plus, Flag, ChevronRight } from 'lucide-react-native';
+import { Calendar, Check, Camera, Clock, MessageCircle, ChevronDown, ChevronUp, ChevronRight, AlertTriangle, Edit3, Plus, Upload } from 'lucide-react-native';
 import Colors from '@/constants/Colors';
 import DashboardHeader from '@/components/DashboardHeader';
 
-type LogType = 'voyage' | 'weather' | 'maintenance' | 'fuel';
+// Checklist types
+type ChecklistType = 'pre-departure' | 'post-use' | 'maintenance' | 'seasonal';
 
-interface LogEntry {
+// Checklist item status
+type ItemStatus = 'pass' | 'fail' | 'pending';
+
+// Checklist item category
+type ItemCategory = 'safety' | 'engine' | 'exterior' | 'interior' | 'systems' | 'documentation';
+
+// Checklist item interface
+interface ChecklistItem {
   id: string;
-  type: LogType;
+  category: ItemCategory;
   title: string;
-  date: string;
-  details: string;
-  location?: string;
-  weatherCondition?: string;
-  distance?: number;
-  duration?: string;
-  image?: string;
+  status: ItemStatus;
+  comments: string;
+  hasPhoto: boolean;
+  photoUrl?: string;
 }
 
-// Sample log data
-const logEntries: LogEntry[] = [
+// Checklist interface
+interface Checklist {
+  id: string;
+  type: ChecklistType;
+  title: string;
+  date: string;
+  items: ChecklistItem[];
+  progress: number;
+  completed: boolean;
+  signature?: string;
+}
+
+// Sample checklist data
+const checklists: Checklist[] = [
   {
     id: '1',
-    type: 'voyage',
-    title: 'Weekend Cruise to Angel Island',
-    date: '2023-05-20',
-    details: 'Departed Marina Bay at 09:30, arrived at Angel Island at 11:45. Smooth sailing with light winds.',
-    location: 'Angel Island',
-    distance: 12.5,
-    duration: '2h 15m',
-    image: 'https://images.unsplash.com/photo-1544551763-92ab472cad5d?ixlib=rb-4.0.3&q=85&fm=jpg&crop=entropy&cs=srgb&w=1200'
+    type: 'pre-departure',
+    title: 'Weekend Trip Pre-Departure Check',
+    date: '2023-06-15',
+    items: [
+      { id: '1-1', category: 'safety', title: 'Life jackets present and accessible', status: 'pass', comments: 'All 8 life jackets accounted for', hasPhoto: false },
+      { id: '1-2', category: 'safety', title: 'Fire extinguishers charged', status: 'pass', comments: 'Gauges in green zone', hasPhoto: true, photoUrl: 'https://images.unsplash.com/photo-1551419762-4a3d998f6292?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8ZmlyZSUyMGV4dGluZ3Vpc2hlcnxlbnwwfHwwfHx8MA%3D%3D&auto=format&fit=crop&w=500&q=60' },
+      { id: '1-3', category: 'engine', title: 'Engine oil level', status: 'pass', comments: 'Topped off', hasPhoto: false },
+      { id: '1-4', category: 'systems', title: 'Navigation lights operational', status: 'fail', comments: 'Starboard light intermittent', hasPhoto: true, photoUrl: 'https://images.unsplash.com/photo-1520383278046-37a90eb02d79?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NXx8Ym9hdCUyMGxpZ2h0fGVufDB8fDB8fHww&auto=format&fit=crop&w=500&q=60' },
+      { id: '1-5', category: 'documentation', title: 'Registration documents onboard', status: 'pending', comments: '', hasPhoto: false },
+    ],
+    progress: 80,
+    completed: false,
   },
   {
     id: '2',
-    type: 'weather',
-    title: 'Storm Warning',
-    date: '2023-05-18',
-    details: 'Strong wind conditions recorded (25-30 knots). Decision made to postpone scheduled voyage.',
-    weatherCondition: 'Stormy',
+    type: 'post-use',
+    title: 'Day Trip Post-Use Checklist',
+    date: '2023-06-10',
+    items: [
+      { id: '2-1', category: 'exterior', title: 'Hull inspected for damage', status: 'pass', comments: 'No visible damage', hasPhoto: false },
+      { id: '2-2', category: 'engine', title: 'Engine flushed with fresh water', status: 'pass', comments: 'Completed for 15 minutes', hasPhoto: false },
+      { id: '2-3', category: 'interior', title: 'Cabin cleaned and secured', status: 'pass', comments: 'All items stowed properly', hasPhoto: true, photoUrl: 'https://images.unsplash.com/photo-1567899378494-47b22a2ae96a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8Ym9hdCUyMGNhYmlufGVufDB8fDB8fHww&auto=format&fit=crop&w=500&q=60' },
+    ],
+    progress: 100,
+    completed: true,
+    signature: 'Captain Mike',
   },
   {
     id: '3',
     type: 'maintenance',
-    title: 'Engine Maintenance',
-    date: '2023-05-15',
-    details: 'Completed routine engine maintenance. Oil changed, filters replaced, and cooling system inspected.',
+    title: 'Monthly Maintenance Checklist',
+    date: '2023-06-01',
+    items: [
+      { id: '3-1', category: 'engine', title: 'Change engine oil and filter', status: 'pass', comments: 'Used synthetic 10W-30', hasPhoto: false },
+      { id: '3-2', category: 'systems', title: 'Inspect bilge pumps', status: 'pass', comments: 'Both pumps operational', hasPhoto: false },
+      { id: '3-3', category: 'exterior', title: 'Clean and wax hull', status: 'pass', comments: 'Used marine grade wax', hasPhoto: true, photoUrl: 'https://images.unsplash.com/photo-1609439385030-303abc3e6786?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8Ym9hdCUyMGh1bGx8ZW58MHx8MHx8fDA%3D&auto=format&fit=crop&w=500&q=60' },
+      { id: '3-4', category: 'systems', title: 'Check and service battery', status: 'fail', comments: 'Battery #2 showing low voltage', hasPhoto: false },
+    ],
+    progress: 75,
+    completed: false,
   },
   {
     id: '4',
-    type: 'fuel',
-    title: 'Refueling',
-    date: '2023-05-14',
-    details: 'Added 75 gallons of fuel. Average consumption rate: 2.8 gal/hour during last voyage.',
-  },
-  {
-    id: '5',
-    type: 'voyage',
-    title: 'Day Trip to Sausalito',
-    date: '2023-05-10',
-    details: 'Perfect conditions for sailing. Anchored at Richardson Bay for lunch before returning.',
-    location: 'Sausalito',
-    distance: 18.3,
-    duration: '4h 30m',
-    image: 'https://images.unsplash.com/photo-1548515943-42406673a316?ixlib=rb-4.0.3&q=85&fm=jpg&crop=entropy&cs=srgb&w=1200'
+    type: 'seasonal',
+    title: 'Spring Preparation Checklist',
+    date: '2023-04-15',
+    items: [
+      { id: '4-1', category: 'exterior', title: 'Remove winter cover', status: 'pass', comments: 'Cover stored in garage', hasPhoto: false },
+      { id: '4-2', category: 'systems', title: 'Check all through-hull fittings', status: 'pass', comments: 'All secure with no corrosion', hasPhoto: false },
+      { id: '4-3', category: 'engine', title: 'Replace impeller', status: 'pass', comments: 'New OEM part installed', hasPhoto: true, photoUrl: 'https://images.unsplash.com/photo-1528150177508-7cc0c36cda5c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8Ym9hdCUyMGVuZ2luZXxlbnwwfHwwfHx8MA%3D&auto=format&fit=crop&w=500&q=60' },
+      { id: '4-4', category: 'documentation', title: 'Renew insurance policy', status: 'pass', comments: 'Renewed for 12 months', hasPhoto: false },
+      { id: '4-5', category: 'safety', title: 'Replace expired flares', status: 'pass', comments: 'New flares expire in 3 years', hasPhoto: false },
+    ],
+    progress: 100,
+    completed: true,
+    signature: 'Captain Mike',
   },
 ];
 
 // Filter categories
-const categories = ['All', 'Voyages', 'Weather', 'Maintenance', 'Fuel'];
+const checklistTypes = ['All', 'Pre-Departure', 'Post-Use', 'Maintenance', 'Seasonal'];
 
-export default function LogbookScreen() {
-  const [selectedCategory, setSelectedCategory] = useState('All');
+// Category mapping for display
+const categoryMapping = {
+  safety: { title: 'Safety Equipment', icon: <AlertTriangle size={16} color={Colors.status.warning} /> },
+  engine: { title: 'Engine & Mechanical', icon: <Clock size={16} color={Colors.primary[500]} /> },
+  exterior: { title: 'Hull & Exterior', icon: <Check size={16} color={Colors.primary[700]} /> },
+  interior: { title: 'Cabin & Interior', icon: <Check size={16} color={Colors.accent[500]} /> },
+  systems: { title: 'Electrical & Systems', icon: <Check size={16} color={Colors.status.info} /> },
+  documentation: { title: 'Documentation', icon: <MessageCircle size={16} color={Colors.status.success} /> },
+};
+
+export default function ChecklistsScreen() {
+  const [selectedType, setSelectedType] = useState('All');
+  const [expandedChecklist, setExpandedChecklist] = useState<string | null>(null);
+  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
   const insets = useSafeAreaInsets();
   
-  // Filter log entries based on selected category
-  const filteredLogs = selectedCategory === 'All' 
-    ? logEntries 
-    : logEntries.filter(log => {
-        if (selectedCategory === 'Voyages') return log.type === 'voyage';
-        if (selectedCategory === 'Weather') return log.type === 'weather';
-        if (selectedCategory === 'Maintenance') return log.type === 'maintenance';
-        if (selectedCategory === 'Fuel') return log.type === 'fuel';
+  // Filter checklists based on selected type
+  const filteredChecklists = selectedType === 'All' 
+    ? checklists 
+    : checklists.filter(checklist => {
+        if (selectedType === 'Pre-Departure') return checklist.type === 'pre-departure';
+        if (selectedType === 'Post-Use') return checklist.type === 'post-use';
+        if (selectedType === 'Maintenance') return checklist.type === 'maintenance';
+        if (selectedType === 'Seasonal') return checklist.type === 'seasonal';
         return true;
       });
   
@@ -97,52 +141,138 @@ export default function LogbookScreen() {
     });
   };
   
-  // Get icon for log type
-  const getLogIcon = (type: LogType) => {
-    switch (type) {
-      case 'voyage':
-        return <Navigation size={24} color={Colors.primary[700]} />;
-      case 'weather':
-        return <Wind size={24} color={Colors.status.info} />;
-      case 'maintenance':
-        return <Calendar size={24} color={Colors.accent[500]} />;
-      case 'fuel':
-        return <Droplets size={24} color={Colors.status.success} />;
-      default:
-        return <Flag size={24} color={Colors.primary[700]} />;
-    }
+  // Toggle checklist expansion
+  const toggleChecklistExpansion = (id: string) => {
+    setExpandedChecklist(expandedChecklist === id ? null : id);
   };
   
-  const renderVoyageDetails = (log: LogEntry) => {
-    if (log.type !== 'voyage') return null;
+  // Toggle category expansion
+  const toggleCategoryExpansion = (categoryKey: string) => {
+    setExpandedCategories(prev => ({
+      ...prev,
+      [categoryKey]: !prev[categoryKey]
+    }));
+  };
+
+  // Get items grouped by category
+  const getItemsByCategory = (items: ChecklistItem[]) => {
+    const grouped: Record<ItemCategory, ChecklistItem[]> = {
+      safety: [],
+      engine: [],
+      exterior: [],
+      interior: [],
+      systems: [],
+      documentation: [],
+    };
     
-    return (
-      <View style={styles.voyageDetailsContainer}>
-        {log.image && (
-          <Image 
-            source={{ uri: log.image }} 
-            style={styles.voyageImage}
-          />
-        )}
-        
-        <View style={styles.voyageStats}>
-          <View style={styles.voyageStatItem}>
-            <Map size={16} color={Colors.neutral[500]} />
-            <Text style={styles.voyageStatText}>{log.location}</Text>
-          </View>
-          
-          <View style={styles.voyageStatItem}>
-            <Navigation size={16} color={Colors.neutral[500]} />
-            <Text style={styles.voyageStatText}>{log.distance} nautical miles</Text>
-          </View>
-          
-          <View style={styles.voyageStatItem}>
-            <Clock size={16} color={Colors.neutral[500]} />
-            <Text style={styles.voyageStatText}>{log.duration}</Text>
-          </View>
+    items.forEach(item => {
+      grouped[item.category].push(item);
+    });
+    
+    return Object.entries(grouped)
+      .filter(([_, items]) => items.length > 0)
+      .map(([category, items]) => ({
+        category: category as ItemCategory,
+        items
+      }));
+  };
+  
+  // Render checklist item
+  const renderChecklistItem = (item: ChecklistItem) => (
+    <View key={item.id} style={styles.checklistItem}>
+      <View style={styles.checklistItemHeader}>
+        <Text style={styles.itemTitle}>{item.title}</Text>
+        <View style={styles.statusContainer}>
+          <TouchableOpacity 
+            style={[
+              styles.statusButton, 
+              item.status === 'pass' && styles.passButton
+            ]}
+          >
+            <Text style={styles.statusButtonText}>Pass</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[
+              styles.statusButton, 
+              item.status === 'fail' && styles.failButton
+            ]}
+          >
+            <Text style={styles.statusButtonText}>Fail</Text>
+          </TouchableOpacity>
         </View>
       </View>
+      
+      {item.comments ? (
+        <View style={styles.commentContainer}>
+          <Text style={styles.commentLabel}>Comments:</Text>
+          <Text style={styles.commentText}>{item.comments}</Text>
+        </View>
+      ) : (
+        <View style={styles.commentInputContainer}>
+          <TextInput
+            style={styles.commentInput}
+            placeholder="Add comments here..."
+            placeholderTextColor={Colors.neutral[400]}
+            multiline
+          />
+        </View>
+      )}
+      
+      {item.hasPhoto && item.photoUrl && (
+        <Image source={{ uri: item.photoUrl }} style={styles.itemPhoto} />
+      )}
+      
+      {!item.hasPhoto && (
+        <TouchableOpacity style={styles.photoButton}>
+          <Camera size={16} color={Colors.primary[700]} />
+          <Text style={styles.photoButtonText}>Add Photo</Text>
+        </TouchableOpacity>
+      )}
+          </View>
+  );
+  
+  // Render checklist category
+  const renderCategory = (category: ItemCategory, items: ChecklistItem[], checklistId: string) => {
+    const categoryKey = `${checklistId}-${category}`;
+    const isExpanded = expandedCategories[categoryKey];
+    
+    return (
+      <View key={categoryKey} style={styles.categoryContainer}>
+        <TouchableOpacity 
+          style={styles.categoryHeader}
+          onPress={() => toggleCategoryExpansion(categoryKey)}
+        >
+          <View style={styles.categoryTitleContainer}>
+            {categoryMapping[category].icon}
+            <Text style={styles.categoryTitle}>{categoryMapping[category].title}</Text>
+          </View>
+          <Text style={styles.categoryCount}>{items.length} items</Text>
+          {isExpanded ? <ChevronUp size={20} color={Colors.neutral[500]} /> : <ChevronDown size={20} color={Colors.neutral[500]} />}
+        </TouchableOpacity>
+        
+        {isExpanded && (
+          <View style={styles.categoryItems}>
+            {items.map(renderChecklistItem)}
+          </View>
+        )}
+      </View>
     );
+  };
+  
+  // Get checklist type icon
+  const getChecklistTypeIcon = (type: ChecklistType) => {
+    switch (type) {
+      case 'pre-departure':
+        return <Calendar size={24} color={Colors.primary[700]} />;
+      case 'post-use':
+        return <Check size={24} color={Colors.status.success} />;
+      case 'maintenance':
+        return <Clock size={24} color={Colors.status.info} />;
+      case 'seasonal':
+        return <Calendar size={24} color={Colors.accent[500]} />;
+      default:
+        return <Check size={24} color={Colors.primary[700]} />;
+    }
   };
   
   return (
@@ -152,42 +282,42 @@ export default function LogbookScreen() {
       <ScrollView
         style={styles.scrollContainer}
         contentContainerStyle={[
-          styles.scrollContent,
+          styles.contentContainer,
           { paddingBottom: 24 + (Platform.OS !== 'web' ? insets.bottom : 0) }
         ]}
         showsVerticalScrollIndicator={false}
       >
         {/* Header Section */}
         <View style={styles.headerSection}>
-          <Text style={styles.screenTitle}>Logbook</Text>
+          <Text style={styles.screenTitle}>Checklists</Text>
           <TouchableOpacity style={styles.addButton}>
             <Plus size={20} color="#FFF" />
-            <Text style={styles.addButtonText}>New Entry</Text>
+            <Text style={styles.addButtonText}>New Checklist</Text>
           </TouchableOpacity>
         </View>
         
-        {/* Category Filter */}
+        {/* Checklist Type Filter */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.categoriesContainer}
+          contentContainerStyle={styles.typesContainer}
         >
-          {categories.map((category) => (
+          {checklistTypes.map((type) => (
             <TouchableOpacity
-              key={category}
+              key={type}
               style={[
-                styles.categoryButton,
-                selectedCategory === category && styles.selectedCategory
+                styles.typeButton,
+                selectedType === type && styles.selectedType
               ]}
-              onPress={() => setSelectedCategory(category)}
+              onPress={() => setSelectedType(type)}
             >
               <Text 
                 style={[
-                  styles.categoryText,
-                  selectedCategory === category && styles.selectedCategoryText
+                  styles.typeText,
+                  selectedType === type && styles.selectedTypeText
                 ]}
               >
-                {category}
+                {type}
               </Text>
             </TouchableOpacity>
           ))}
@@ -196,48 +326,90 @@ export default function LogbookScreen() {
         {/* Statistics Summary */}
         <View style={styles.statsContainer}>
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>42</Text>
-            <Text style={styles.statLabel}>Total Voyages</Text>
+            <Text style={styles.statValue}>24</Text>
+            <Text style={styles.statLabel}>Total Checklists</Text>
           </View>
           
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>968</Text>
-            <Text style={styles.statLabel}>Nautical Miles</Text>
+            <Text style={styles.statValue}>18</Text>
+            <Text style={styles.statLabel}>Completed</Text>
           </View>
           
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>186</Text>
-            <Text style={styles.statLabel}>Engine Hours</Text>
+            <Text style={styles.statValue}>6</Text>
+            <Text style={styles.statLabel}>In Progress</Text>
           </View>
         </View>
         
-        {/* Log Entries */}
-        <View style={styles.logsContainer}>
-          {filteredLogs.map((log) => (
+        {/* Checklists */}
+        <View style={styles.checklistsContainer}>
+          {filteredChecklists.map((checklist) => (
+            <View key={checklist.id} style={styles.checklistCard}>
             <TouchableOpacity 
-              key={log.id}
-              style={styles.logCard}
-              activeOpacity={0.7}
+                style={styles.checklistHeader}
+                onPress={() => toggleChecklistExpansion(checklist.id)}
             >
-              <View style={styles.logHeader}>
-                <View style={styles.logTitleSection}>
+                <View style={styles.checklistTitleSection}>
                   <View style={styles.iconContainer}>
-                    {getLogIcon(log.type)}
+                    {getChecklistTypeIcon(checklist.type)}
                   </View>
                   
-                  <View style={styles.logTitleContainer}>
-                    <Text style={styles.logTitle}>{log.title}</Text>
-                    <Text style={styles.logDate}>{formatDate(log.date)}</Text>
+                  <View style={styles.checklistTitleContainer}>
+                    <Text style={styles.checklistTitle}>{checklist.title}</Text>
+                    <Text style={styles.checklistDate}>{formatDate(checklist.date)}</Text>
                   </View>
                 </View>
                 
-                <ChevronRight size={20} color={Colors.neutral[400]} />
+                <View style={styles.expandIconContainer}>
+                  {expandedChecklist === checklist.id ? 
+                    <ChevronUp size={20} color={Colors.neutral[400]} /> :
+                    <ChevronDown size={20} color={Colors.neutral[400]} />
+                  }
+                </View>
+              </TouchableOpacity>
+              
+              <View style={styles.progressContainer}>
+                <View style={styles.progressBar}>
+                  <View 
+                    style={[
+                      styles.progressFill, 
+                      { width: `${checklist.progress}%` },
+                      checklist.progress === 100 ? styles.progressComplete : null
+                    ]} 
+                  />
+                </View>
+                <Text style={styles.progressText}>{checklist.progress}% Complete</Text>
               </View>
               
-              <Text style={styles.logDetails}>{log.details}</Text>
-              
-              {renderVoyageDetails(log)}
+              {expandedChecklist === checklist.id && (
+                <View style={styles.checklistContent}>
+                  {getItemsByCategory(checklist.items).map(group => 
+                    renderCategory(group.category, group.items, checklist.id)
+                  )}
+                  
+                  <View style={styles.checklistFooter}>
+                    {!checklist.completed ? (
+                      <>
+                        <TouchableOpacity style={styles.signatureButton}>
+                          <Edit3 size={16} color={Colors.primary[700]} />
+                          <Text style={styles.signatureButtonText}>Sign & Complete</Text>
+                        </TouchableOpacity>
+                        
+                        <TouchableOpacity style={styles.submitButton}>
+                          <Upload size={16} color="#FFF" />
+                          <Text style={styles.submitButtonText}>Generate Report</Text>
             </TouchableOpacity>
+                      </>
+                    ) : (
+                      <View style={styles.completedInfoContainer}>
+                        <Text style={styles.completedByText}>Completed by:</Text>
+                        <Text style={styles.signatureText}>{checklist.signature}</Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+              )}
+            </View>
           ))}
         </View>
       </ScrollView>
@@ -253,7 +425,7 @@ const styles = StyleSheet.create({
   scrollContainer: {
     flex: 1,
   },
-  scrollContent: {
+  contentContainer: {
     paddingTop: 20,
     paddingHorizontal: 16,
   },
@@ -265,7 +437,7 @@ const styles = StyleSheet.create({
   },
   screenTitle: {
     fontFamily: Platform.OS === 'ios' ? 'San Francisco' : 'Roboto',
-    fontSize: 24, // H1 size
+    fontSize: 24,
     fontWeight: '700',
     color: Colors.neutral[900],
   },
@@ -279,30 +451,30 @@ const styles = StyleSheet.create({
   },
   addButtonText: {
     fontFamily: Platform.OS === 'ios' ? 'San Francisco' : 'Roboto',
-    fontSize: 14, // Body text
+    fontSize: 14,
     fontWeight: '500',
     color: '#FFFFFF',
     marginLeft: 6,
   },
-  categoriesContainer: {
+  typesContainer: {
     marginBottom: 20,
   },
-  categoryButton: {
+  typeButton: {
     backgroundColor: Colors.secondary[200],
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 16,
     marginRight: 8,
   },
-  selectedCategory: {
+  selectedType: {
     backgroundColor: Colors.primary[700],
   },
-  categoryText: {
+  typeText: {
     fontFamily: Platform.OS === 'ios' ? 'San Francisco' : 'Roboto',
-    fontSize: 14, // Body text
+    fontSize: 14,
     color: Colors.neutral[600],
   },
-  selectedCategoryText: {
+  selectedTypeText: {
     color: '#FFFFFF',
     fontWeight: '500',
   },
@@ -324,37 +496,37 @@ const styles = StyleSheet.create({
   },
   statValue: {
     fontFamily: Platform.OS === 'ios' ? 'San Francisco' : 'Roboto',
-    fontSize: 20, // H2 size
+    fontSize: 20,
     fontWeight: '700',
     color: Colors.primary[700],
     marginBottom: 4,
   },
   statLabel: {
     fontFamily: Platform.OS === 'ios' ? 'San Francisco' : 'Roboto',
-    fontSize: 12, // Label text
+    fontSize: 12,
     color: Colors.neutral[500],
   },
-  logsContainer: {
+  checklistsContainer: {
     marginBottom: 20,
   },
-  logCard: {
+  checklistCard: {
     backgroundColor: Colors.background,
     borderRadius: 12,
-    padding: 16,
     marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
     elevation: 2,
+    overflow: 'hidden',
   },
-  logHeader: {
+  checklistHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 12,
+    alignItems: 'center',
+    padding: 16,
   },
-  logTitleSection: {
+  checklistTitleSection: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
@@ -368,52 +540,233 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: 12,
   },
-  logTitleContainer: {
+  checklistTitleContainer: {
     flex: 1,
   },
-  logTitle: {
+  checklistTitle: {
     fontFamily: Platform.OS === 'ios' ? 'San Francisco' : 'Roboto',
-    fontSize: 16, // H3 size
+    fontSize: 16,
     fontWeight: '600',
     color: Colors.neutral[900],
     marginBottom: 4,
   },
-  logDate: {
+  checklistDate: {
     fontFamily: Platform.OS === 'ios' ? 'San Francisco' : 'Roboto',
-    fontSize: 12, // Label text
+    fontSize: 12,
     color: Colors.neutral[500],
   },
-  logDetails: {
+  expandIconContainer: {
+    padding: 4,
+  },
+  progressContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
+  progressBar: {
+    height: 8,
+    backgroundColor: Colors.neutral[200],
+    borderRadius: 4,
+    overflow: 'hidden',
+    marginBottom: 8,
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: Colors.primary[500],
+    borderRadius: 4,
+  },
+  progressComplete: {
+    backgroundColor: Colors.status.success,
+  },
+  progressText: {
     fontFamily: Platform.OS === 'ios' ? 'San Francisco' : 'Roboto',
-    fontSize: 14, // Body text
-    lineHeight: 20, // 1.4 line height
-    color: Colors.neutral[700],
+    fontSize: 12,
+    color: Colors.neutral[600],
+    textAlign: 'right',
+  },
+  checklistContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
+  categoryContainer: {
     marginBottom: 12,
-  },
-  voyageDetailsContainer: {
-    marginTop: 8,
-  },
-  voyageImage: {
-    width: '100%',
-    height: 160,
+    borderWidth: 1,
+    borderColor: Colors.neutral[200],
     borderRadius: 8,
-    marginBottom: 12,
+    overflow: 'hidden',
   },
-  voyageStats: {
+  categoryHeader: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: Colors.secondary[100],
-    borderRadius: 8,
     padding: 12,
+    backgroundColor: Colors.secondary[100],
   },
-  voyageStatItem: {
+  categoryTitleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  voyageStatText: {
+  categoryTitle: {
     fontFamily: Platform.OS === 'ios' ? 'San Francisco' : 'Roboto',
-    fontSize: 12, // Label text
+    fontSize: 14,
+    fontWeight: '600',
     color: Colors.neutral[800],
+    marginLeft: 8,
+  },
+  categoryCount: {
+    fontFamily: Platform.OS === 'ios' ? 'San Francisco' : 'Roboto',
+    fontSize: 12,
+    color: Colors.neutral[500],
+    marginRight: 8,
+  },
+  categoryItems: {
+    padding: 12,
+  },
+  checklistItem: {
+    marginBottom: 16,
+    backgroundColor: Colors.background,
+    borderRadius: 8,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: Colors.neutral[200],
+  },
+  checklistItemHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  itemTitle: {
+    fontFamily: Platform.OS === 'ios' ? 'San Francisco' : 'Roboto',
+    fontSize: 14,
+    fontWeight: '500',
+    color: Colors.neutral[900],
+    flex: 1,
+    marginRight: 8,
+  },
+  statusContainer: {
+    flexDirection: 'row',
+  },
+  statusButton: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 4,
+    marginLeft: 4,
+    backgroundColor: Colors.neutral[300],
+  },
+  passButton: {
+    backgroundColor: Colors.status.success,
+  },
+  failButton: {
+    backgroundColor: Colors.status.error,
+  },
+  statusButtonText: {
+    fontFamily: Platform.OS === 'ios' ? 'San Francisco' : 'Roboto',
+    fontSize: 12,
+    fontWeight: '500',
+    color: Colors.background,
+  },
+  commentContainer: {
+    marginBottom: 8,
+  },
+  commentLabel: {
+    fontFamily: Platform.OS === 'ios' ? 'San Francisco' : 'Roboto',
+    fontSize: 12,
+    fontWeight: '500',
+    color: Colors.neutral[700],
+    marginBottom: 4,
+  },
+  commentText: {
+    fontFamily: Platform.OS === 'ios' ? 'San Francisco' : 'Roboto',
+    fontSize: 12,
+    color: Colors.neutral[700],
+  },
+  commentInputContainer: {
+    marginBottom: 8,
+  },
+  commentInput: {
+    fontFamily: Platform.OS === 'ios' ? 'San Francisco' : 'Roboto',
+    fontSize: 14,
+    color: Colors.neutral[900],
+    borderWidth: 1,
+    borderColor: Colors.neutral[300],
+    borderRadius: 6,
+    padding: 8,
+    minHeight: 60,
+  },
+  itemPhoto: {
+    width: '100%',
+    height: 120,
+    borderRadius: 6,
+    marginTop: 8,
+  },
+  photoButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    backgroundColor: Colors.secondary[200],
+    borderRadius: 6,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: Colors.primary[400],
+  },
+  photoButtonText: {
+    fontFamily: Platform.OS === 'ios' ? 'San Francisco' : 'Roboto',
+    fontSize: 12,
+    color: Colors.primary[700],
     marginLeft: 6,
+  },
+  checklistFooter: {
+    marginTop: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  signatureButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.secondary[200],
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.neutral[300],
+  },
+  signatureButtonText: {
+    fontFamily: Platform.OS === 'ios' ? 'San Francisco' : 'Roboto',
+    fontSize: 14,
+    color: Colors.primary[700],
+    marginLeft: 6,
+  },
+  submitButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.primary[700],
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+  },
+  submitButtonText: {
+    fontFamily: Platform.OS === 'ios' ? 'San Francisco' : 'Roboto',
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#FFFFFF',
+    marginLeft: 6,
+  },
+  completedInfoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  completedByText: {
+    fontFamily: Platform.OS === 'ios' ? 'San Francisco' : 'Roboto',
+    fontSize: 14,
+    color: Colors.neutral[600],
+    marginRight: 6,
+  },
+  signatureText: {
+    fontFamily: Platform.OS === 'ios' ? 'San Francisco' : 'Roboto',
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.primary[700],
+    fontStyle: 'italic',
   },
 });

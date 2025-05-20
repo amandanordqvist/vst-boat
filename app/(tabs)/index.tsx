@@ -9,6 +9,7 @@ import MaintenanceAlerts from '@/components/MaintenanceAlerts';
 import QuickActions from '@/components/QuickActions';
 import RecentActivity from '@/components/RecentActivity';
 import VesselOverview from '@/components/VesselOverview';
+import ChecklistButton from '@/components/ChecklistButton';
 import Colors from '@/constants/Colors';
 
 // Sample data
@@ -103,6 +104,11 @@ export default function DashboardScreen() {
         ]}
         showsVerticalScrollIndicator={false}
       >
+        {/* Debug Navigation Button */}
+        <View style={styles.debugButtonContainer}>
+          <ChecklistButton />
+        </View>
+        
         {/* Vessel overview section */}
         <View style={styles.vesselImageSection}>
           <VesselOverview
@@ -217,5 +223,9 @@ const styles = StyleSheet.create({
     color: Colors.primary[700],
     marginHorizontal: 12,
     letterSpacing: 0.2, // Slight letter spacing for better readability
+  },
+  debugButtonContainer: {
+    alignItems: 'center',
+    marginTop: 16,
   },
 });

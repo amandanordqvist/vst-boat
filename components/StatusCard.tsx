@@ -1,9 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet, Platform } from 'react-native';
-import { BlurView } from 'expo-blur';
+import { View, Text, StyleSheet, Platform, TouchableOpacity } from 'react-native';
 import { CircleCheck as CheckCircle, TriangleAlert as AlertTriangle, Circle as XCircle } from 'lucide-react-native';
 import Colors from '@/constants/Colors';
-import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 
 type StatusType = 'ready' | 'attention' | 'critical';
 
@@ -14,8 +12,6 @@ interface StatusCardProps {
 }
 
 export default function StatusCard({ type, title, message }: StatusCardProps) {
-  const scale = useSharedValue(1);
-  
   const statusColors = {
     ready: Colors.status.success,
     attention: Colors.status.warning,
@@ -26,20 +22,6 @@ export default function StatusCard({ type, title, message }: StatusCardProps) {
     ready: <CheckCircle color={statusColors.ready} size={24} />,
     attention: <AlertTriangle color={statusColors.attention} size={24} />,
     critical: <XCircle color={statusColors.critical} size={24} />,
-  };
-  
-  const containerStyle = useAnimatedStyle(() => {
-    return {
-      transform: [{ scale: scale.value }],
-    };
-  });
-  
-  const handlePressIn = () => {
-    scale.value = withSpring(0.98);
-  };
-  
-  const handlePressOut = () => {
-    scale.value = withSpring(1);
   };
   
   const CardContent = () => (
@@ -61,21 +43,14 @@ export default function StatusCard({ type, title, message }: StatusCardProps) {
   );
   
   return (
-    <Animated.View 
-      style={[styles.container, containerStyle]}
-      onTouchStart={handlePressIn}
-      onTouchEnd={handlePressOut}
+    <TouchableOpacity 
+      style={styles.container}
+      activeOpacity={0.9}
     >
-      {Platform.OS === 'ios' ? (
-        <BlurView intensity={70} tint="light" style={styles.blurContainer}>
-          <CardContent />
-        </BlurView>
-      ) : (
-        <View style={styles.regularContainer}>
-          <CardContent />
-        </View>
-      )}
-    </Animated.View>
+      <View style={styles.regularContainer}>
+        <CardContent />
+      </View>
+    </TouchableOpacity>
   );
 }
 
@@ -84,12 +59,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     borderRadius: 12,
     overflow: 'hidden',
-  },
-  blurContainer: {
-    borderRadius: 12,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
   },
   regularContainer: {
     backgroundColor: Colors.background,
