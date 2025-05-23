@@ -124,6 +124,124 @@ const categoryMapping = {
   documentation: { title: 'Documentation', icon: <MessageCircle size={16} color={Colors.status.success} /> },
 };
 
+// Add this component before the main ChecklistsScreen component
+const DraggableItem = ({ item, category, onReorder }: { 
+  item: ChecklistItem; 
+  category: ItemCategory; 
+  onReorder: (itemId: string, category: ItemCategory, newOrder: number) => void;
+}) => {
+  // Move hooks here - they will always be called in the same order
+  const pan = useRef(new Animated.ValueXY()).current;
+  const [isDragging, setIsDragging] = useState(false);
+  
+  // Pan responder for drag gesture
+  const panResponder = PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onPanResponderGrant: () => {
+      setIsDragging(true);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    },
+    onPanResponderMove: Animated.event(
+      [null, { dy: pan.y }],
+      { useNativeDriver: false }
+    ),
+    onPanResponderRelease: (_, gestureState) => {
+      setIsDragging(false);
+      
+      // Calculate new position based on gesture
+      const itemHeight = 100; // Approximate height of item
+      const orderChange = Math.round(gestureState.dy / itemHeight);
+      
+      if (orderChange !== 0) {
+        const newOrder = (item.order || 0) + orderChange * 10;
+        onReorder(item.id, category, newOrder);
+      }
+      
+      // Reset position
+      Animated.spring(pan, {
+        toValue: { x: 0, y: 0 },
+        useNativeDriver: false
+      }).start();
+    }
+  });
+  
+  return (
+    <Animated.View
+      style={[
+        { transform: pan.getTranslateTransform() },
+        isDragging && { 
+          zIndex: 999, 
+          elevation: 5, 
+          shadowColor: '#000', 
+          shadowOffset: { width: 0, height: 2 }, 
+          shadowOpacity: 0.3, 
+          shadowRadius: 4 
+        }
+      ]}
+      {...panResponder.panHandlers}
+    >
+      <ChecklistItemComponent item={item} />
+    </Animated.View>
+  );
+};
+
+// Add this component for the actual checklist item rendering
+const ChecklistItemComponent = ({ item }: { item: ChecklistItem }) => (
+  <View style={[styles.checklistItem, { backgroundColor: Colors.background, borderColor: Colors.neutral[200] }]}>
+    <View style={styles.checklistItemHeader}>
+      <Text style={[styles.itemTitle, { color: Colors.neutral[900] }]}>{item.title}</Text>
+      <View style={styles.statusContainer}>
+        <TouchableOpacity 
+          style={[
+            styles.statusButton, 
+            item.status === 'pass' && styles.passButton
+          ]}
+        >
+          <Text style={styles.statusButtonText}>Pass</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[
+            styles.statusButton, 
+            item.status === 'fail' && styles.failButton
+          ]}
+        >
+          <Text style={styles.statusButtonText}>Fail</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+    
+    {item.comments ? (
+      <View style={styles.commentContainer}>
+        <Text style={[styles.commentLabel, { color: Colors.neutral[900] }]}>Comments:</Text>
+        <Text style={[styles.commentText, { color: Colors.neutral[900] }]}>{item.comments}</Text>
+      </View>
+    ) : (
+      <View style={styles.commentInputContainer}>
+        <TextInput
+          style={[styles.commentInput, { color: Colors.neutral[900], borderColor: Colors.neutral[200] }]}
+          placeholder="Add comments here..."
+          placeholderTextColor={Colors.neutral[500]}
+          multiline
+        />
+      </View>
+    )}
+    
+    {item.hasPhoto && item.photoUrl && (
+      <Image source={{ uri: item.photoUrl }} style={styles.itemPhoto} />
+    )}
+    
+    {!item.hasPhoto && (
+      <TouchableOpacity 
+        style={[styles.photoButton, { borderColor: Colors.neutral[200] }]}
+        onPress={() => console.log('Add photo for', item.id)}
+      >
+        <Camera size={16} color={Colors.primary[700]} />
+        <Text style={[styles.photoButtonText, { color: Colors.primary[700] }]}>Add Photo</Text>
+      </TouchableOpacity>
+    )}
+  </View>
+);
+
 export default function ChecklistsScreen() {
   const [selectedType, setSelectedType] = useState('All');
   const [expandedChecklist, setExpandedChecklist] = useState<string | null>(null);
@@ -502,7 +620,7 @@ export default function ChecklistsScreen() {
               // Use regular rendering for compact view, draggable for standard view
               return viewType === 'standard' 
                 ? renderDraggableItem(item, category)
-                : renderChecklistItem(item);
+                : <ChecklistItemComponent key={item.id} item={item} />;
             })}
           </View>
         )}
@@ -635,62 +753,13 @@ export default function ChecklistsScreen() {
     accent: isDarkMode ? Colors.primary[300] : Colors.primary[700],
   };
   
-  // Render checklist item
-  const renderChecklistItem = (item: ChecklistItem) => (
-    <View key={item.id} style={[styles.checklistItem, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
-      <View style={styles.checklistItemHeader}>
-        <Text style={[styles.itemTitle, { color: themeColors.text }]}>{item.title}</Text>
-        <View style={styles.statusContainer}>
-          <TouchableOpacity 
-            style={[
-              styles.statusButton, 
-              item.status === 'pass' && styles.passButton
-            ]}
-          >
-            <Text style={styles.statusButtonText}>Pass</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[
-              styles.statusButton, 
-              item.status === 'fail' && styles.failButton
-            ]}
-          >
-            <Text style={styles.statusButtonText}>Fail</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-      
-      {item.comments ? (
-        <View style={styles.commentContainer}>
-          <Text style={[styles.commentLabel, { color: themeColors.text }]}>Comments:</Text>
-          <Text style={[styles.commentText, { color: themeColors.text }]}>{item.comments}</Text>
-        </View>
-      ) : (
-        <View style={styles.commentInputContainer}>
-          <TextInput
-            style={[styles.commentInput, { color: themeColors.text, borderColor: themeColors.border }]}
-            placeholder="Add comments here..."
-            placeholderTextColor={isDarkMode ? Colors.neutral[400] : Colors.neutral[500]}
-            multiline
-          />
-        </View>
-      )}
-      
-      {item.hasPhoto && item.photoUrl && (
-        <Image source={{ uri: item.photoUrl }} style={styles.itemPhoto} />
-      )}
-      
-      {!item.hasPhoto && (
-        <TouchableOpacity 
-          style={[styles.photoButton, { borderColor: themeColors.border }]}
-          onPress={() => openItemModal(item.id)}
-        >
-          <Camera size={16} color={themeColors.accent} />
-          <Text style={[styles.photoButtonText, { color: themeColors.accent }]}>Add Photo</Text>
-        </TouchableOpacity>
-      )}
-    </View>
-  );
+  // Render a draggable checklist item (now simplified)
+  const renderDraggableItem = (item: ChecklistItem, category: ItemCategory) => {
+    // Use regular rendering for compact view, draggable for standard view
+    return viewType === 'standard' 
+      ? <DraggableItem key={item.id} item={item} category={category} onReorder={handleReorder} />
+      : <ChecklistItemComponent key={item.id} item={item} />;
+  };
   
   // Function for drag and drop reordering
   const handleReorder = (itemId: string, category: ItemCategory, newOrder: number) => {
@@ -732,57 +801,6 @@ export default function ChecklistsScreen() {
     
     // Give haptic feedback
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-  };
-
-  // Render a draggable checklist item
-  const renderDraggableItem = (item: ChecklistItem, category: ItemCategory) => {
-    // Reference to track drag position
-    const pan = useRef(new Animated.ValueXY()).current;
-    const [isDragging, setIsDragging] = useState(false);
-    
-    // Pan responder for drag gesture
-    const panResponder = PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onPanResponderGrant: () => {
-        setIsDragging(true);
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      },
-      onPanResponderMove: Animated.event(
-        [null, { dy: pan.y }],
-        { useNativeDriver: false }
-      ),
-      onPanResponderRelease: (_, gestureState) => {
-        setIsDragging(false);
-        
-        // Calculate new position based on gesture
-        const itemHeight = 100; // Approximate height of item
-        const orderChange = Math.round(gestureState.dy / itemHeight);
-        
-        if (orderChange !== 0) {
-          const newOrder = (item.order || 0) + orderChange * 10;
-          handleReorder(item.id, category, newOrder);
-        }
-        
-        // Reset position
-        Animated.spring(pan, {
-          toValue: { x: 0, y: 0 },
-          useNativeDriver: false
-        }).start();
-      }
-    });
-    
-    return (
-      <Animated.View
-        key={item.id}
-        style={[
-          { transform: pan.getTranslateTransform() },
-          isDragging && { zIndex: 999, elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 4 }
-        ]}
-        {...panResponder.panHandlers}
-      >
-        {renderChecklistItem(item)}
-      </Animated.View>
-    );
   };
   
   return (

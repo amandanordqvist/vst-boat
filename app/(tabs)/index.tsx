@@ -1,7 +1,7 @@
-import React from 'react';
-import { View, StyleSheet, ScrollView, Platform, Text } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, StyleSheet, ScrollView, Platform, Text, Animated } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ChevronDown } from 'lucide-react-native';
+import { ChevronDown, Fuel, Gauge, MapPin, Clock, Battery, Thermometer } from 'lucide-react-native';
 import DashboardHeader from '@/components/DashboardHeader';
 import WeatherWidget from '@/components/WeatherWidget';
 import VesselStats from '@/components/VesselStats';
@@ -14,8 +14,16 @@ import CriticalAlerts from '@/components/CriticalAlerts';
 import MaintenanceProgressBar from '@/components/MaintenanceProgressBar';
 import MaintenanceScheduleTimeline from '@/components/MaintenanceScheduleTimeline';
 import { DocumentCardList } from '@/components/DocumentCard';
+import PerformanceMetrics from '@/components/PerformanceMetrics';
+import LiveStatusWidget from '@/components/LiveStatusWidget';
+import SmartNotifications from '@/components/SmartNotifications';
+import EmergencyDashboard from '@/components/EmergencyDashboard';
+import ModernCard from '@/components/ModernCard';
+import EnhancedMetricCard from '@/components/EnhancedMetricCard';
+import { ShimmerCard, ShimmerMetric } from '@/components/ShimmerLoader';
 import { useUserRole } from '@/contexts/UserRoleContext';
 import Colors from '@/constants/Colors';
+import { router } from 'expo-router';
 
 // Sample data
 const maintenanceAlerts = [
@@ -223,11 +231,57 @@ const CORNER_RADIUS = 18;
 // Tab bar height + extra safety margin
 const TAB_BAR_HEIGHT = Platform.OS === 'ios' ? 90 : 70;
 
+interface NextTrip {
+  destination: string;
+  date: string;
+  time: string;
+}
+
+const getNextTripWeather = (nextTrip: NextTrip | undefined) => {
+  if (!nextTrip) return {};
+  // Try to find a matching forecast by date
+  const forecast = weatherForecast.find(f => f.date === nextTrip.date);
+  if (forecast) {
+    return {
+      weatherIconUrl: forecast.iconUrl,
+      weatherCondition: forecast.condition,
+    };
+  }
+  return {};
+};
+
 export default function DashboardScreen() {
   const insets = useSafeAreaInsets();
   // We'll default to 'owner' for now, but in a real app this would come from context
   // const { role } = useUserRole();
   const role = 'owner';
+  
+  // Loading state for demo purposes
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Animation values for staggered loading
+  const fadeAnim = useState(new Animated.Value(0))[0];
+  const slideAnim = useState(new Animated.Value(30))[0];
+  
+  useEffect(() => {
+    // Simulate loading time and start animations
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [fadeAnim, slideAnim]);
   
   // Get only critical and attention alerts
   const criticalAlerts = maintenanceAlerts.filter(
@@ -237,6 +291,8 @@ export default function DashboardScreen() {
   // Determine which components to show based on user role
   const showDocuments = ['owner', 'captain'].includes(role);
   const showMaintenanceSchedule = ['owner', 'captain', 'maintenance'].includes(role);
+  const showPerformanceMetrics = ['owner', 'captain'].includes(role);
+  const showEmergencyDashboard = true; // Always show for safety
   
   return (
     <View style={styles.container}>
@@ -259,121 +315,162 @@ export default function DashboardScreen() {
         {/* Content with padding */}
         <View style={styles.contentSection}>
           {/* Scroll indicator */}
-          <View style={styles.scrollIndicator}>
-            <ChevronDown size={20} color={Colors.primary[400]} />
-          </View>
+          <Animated.View 
+            style={[
+              styles.scrollIndicator,
+              {
+                opacity: fadeAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, 0.6],
+                }),
+              }
+            ]}
+          >
+            <View style={styles.scrollIndicatorDot} />
+          </Animated.View>
           
-          {/* Critical Alerts - Only shown if there are critical alerts */}
-          {criticalAlerts.length > 0 && (
-            <CriticalAlerts alerts={criticalAlerts} />
+          {/* Vessel Summary Card - Top Priority */}
+          <Animated.View
+            style={{
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }],
+            }}
+          >
+            <ModernCard variant="default">
+              <VesselSummaryCard 
+                vesselName={vesselData.name}
+                vesselType={vesselData.type}
+                status="docked"
+                location={vesselData.location}
+                nextTrip={{
+                  ...vesselData.nextTrip,
+                  ...getNextTripWeather(vesselData.nextTrip),
+                }}
+                imageUrl={vesselData.image}
+              />
+            </ModernCard>
+          </Animated.View>
+          
+          {/* Key Metrics - Vessel Stats */}
+          {isLoading ? (
+            <View style={styles.metricsGrid}>
+              <ShimmerMetric />
+              <ShimmerMetric />
+              <ShimmerMetric />
+              <ShimmerMetric />
+            </View>
+          ) : (
+            <Animated.View 
+              style={[
+                styles.metricsGrid,
+                {
+                  opacity: fadeAnim,
+                  transform: [{ translateY: slideAnim }],
+                }
+              ]}
+            >
+              <View style={styles.metricCard}>
+                <EnhancedMetricCard
+                  title="Fuel Level"
+                  value={75}
+                  unit="%"
+                  percentage={75}
+                  status="good"
+                  variant="minimal"
+                  icon={<Fuel size={16} color={Colors.primary[600]} />}
+                  onPress={() => router.push('/(tabs)/fuel')}
+                  size="small"
+                />
+              </View>
+              
+              <View style={styles.metricCard}>
+                <EnhancedMetricCard
+                  title="Engine Temp"
+                  value={92}
+                  unit="°C"
+                  status="normal"
+                  variant="minimal"
+                  icon={<Thermometer size={16} color={Colors.primary[600]} />}
+                  size="small"
+                />
+              </View>
+              
+              <View style={styles.metricCard}>
+                <EnhancedMetricCard
+                  title="Battery"
+                  value={87}
+                  unit="%"
+                  percentage={87}
+                  status="good"
+                  variant="minimal"
+                  icon={<Battery size={16} color={Colors.primary[600]} />}
+                  size="small"
+                />
+              </View>
+              
+              <View style={styles.metricCard}>
+                <EnhancedMetricCard
+                  title="RPM"
+                  value="2,450"
+                  status="normal"
+                  variant="minimal"
+                  icon={<Gauge size={16} color={Colors.primary[600]} />}
+                  size="small"
+                />
+              </View>
+            </Animated.View>
           )}
           
-          {/* Vessel Summary Card */}
-          <VesselSummaryCard 
-            vesselName={vesselData.name}
-            vesselType={vesselData.type}
-            status="docked"
-            location={vesselData.location}
-            nextTrip={vesselData.nextTrip}
-            imageUrl={vesselData.image}
-          />
+          {/* Weather Information - Critical for Maritime Operations */}
+          <ModernCard variant="default">
+            <WeatherWidget 
+              temperature={24}
+              condition="Partly Cloudy"
+              location="Marina Bay"
+              windSpeed={12}
+              humidity={65}
+              iconUrl="https://cdn.weatherapi.com/weather/64x64/day/116.png"
+            />
+          </ModernCard>
           
-          {/* Quick Actions Section */}
-          <View style={styles.sectionHeading}>
-            <View style={styles.headingLine} />
-            <Text style={styles.sectionTitle}>Quick Actions</Text>
-            <View style={styles.headingLine} />
-          </View>
+          {/* Smart Notifications - Important Alerts */}
+          <SmartNotifications maxVisible={2} />
           
+          {/* Quick Actions - Common Tasks */}
           <QuickActions />
           
-          {/* Vessel Stats */}
-          <VesselStats 
-            fuelLevel={75}
-            engineHours={1250}
-            lastService="May 15, 2023"
-            nextService="Aug 15, 2023"
-          />
+          {/* Performance Metrics - Analytics */}
+          {showPerformanceMetrics && (
+            <ModernCard variant="default">
+              <PerformanceMetrics 
+                fuelEfficiency={8.5}
+                engineLoad={65}
+                avgSpeed={12.5}
+                totalDistance={125}
+                operatingHours={42}
+                maintenanceScore={87}
+              />
+            </ModernCard>
+          )}
           
-          {/* Weather Section */}
-          <View style={styles.sectionHeading}>
-            <View style={styles.headingLine} />
-            <Text style={styles.sectionTitle}>Weather</Text>
-            <View style={styles.headingLine} />
-          </View>
-          
-          {/* Weather Widget */}
-          <WeatherWidget 
-            temperature={24}
-            condition="Partly Cloudy"
-            location="Marina Bay"
-            windSpeed={12}
-            humidity={65}
-            iconUrl="https://cdn.weatherapi.com/weather/64x64/day/116.png"
-          />
-          
-          {/* Weather Forecast with Alerts */}
-          <WeatherForecast 
-            forecast={weatherForecast} 
-            alerts={weatherAlerts}
-          />
-          
-          {/* Maintenance Progress Section */}
-          <View style={styles.sectionHeading}>
-            <View style={styles.headingLine} />
-            <Text style={styles.sectionTitle}>Maintenance Status</Text>
-            <View style={styles.headingLine} />
-          </View>
-          
-          {/* Maintenance Progress Bars */}
+          {/* Maintenance Overview - Service Tracking */}
           <MaintenanceProgressBar
             label="Engine Service"
             completed={8}
             total={10}
             dueDate="June 20, 2023"
-            onPress={() => console.log('Navigate to maintenance')}
+            onPress={() => router.push('/(tabs)/maintenance')}
           />
           
-          <MaintenanceProgressBar
-            label="Hull Cleaning"
-            completed={2}
-            total={6}
-            dueDate="July 15, 2023"
-            onPress={() => console.log('Navigate to maintenance')}
-          />
-          
-          {/* Maintenance Schedule */}
-          {showMaintenanceSchedule && (
-            <MaintenanceScheduleTimeline 
-              events={maintenanceSchedule}
-              title="Upcoming Maintenance"
+          {/* Documents - Administrative */}
+          {showDocuments && (
+            <DocumentCardList 
+              documents={vesselDocuments}
+              title="Important Documents"
             />
           )}
           
-          {/* Documents Section - Only shown for owner and captain */}
-          {showDocuments && (
-            <>
-              <View style={styles.sectionHeading}>
-                <View style={styles.headingLine} />
-                <Text style={styles.sectionTitle}>Documents</Text>
-                <View style={styles.headingLine} />
-              </View>
-              
-              <DocumentCardList 
-                documents={vesselDocuments}
-                title="Recent Documents"
-              />
-            </>
-          )}
-          
-          {/* Activity Section */}
-          <View style={styles.sectionHeading}>
-            <View style={styles.headingLine} />
-            <Text style={styles.sectionTitle}>Recent Activity</Text>
-            <View style={styles.headingLine} />
-          </View>
-          
-          {/* Recent Activity */}
+          {/* Recent Activity - History */}
           <RecentActivity activities={recentActivities} />
         </View>
       </ScrollView>
@@ -384,7 +481,7 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.secondary[100], // Light blue background
+    backgroundColor: Colors.neutral[50], // Clean light background
   },
   scrollContainer: {
     flex: 1,
@@ -394,29 +491,28 @@ const styles = StyleSheet.create({
   },
   contentSection: {
     paddingHorizontal: 16,
-    marginTop: -20, // Adjusted to match VesselStats marginTop
+    marginTop: -12,
   },
   scrollIndicator: {
     alignItems: 'center',
-    marginBottom: 12,
-    height: 24,
+    marginBottom: 8,
+    height: 20,
   },
-  sectionHeading: {
+  scrollIndicatorDot: {
+    width: 32,
+    height: 4,
+    backgroundColor: Colors.neutral[400],
+    borderRadius: 2,
+  },
+  metricsGrid: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 24,
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginVertical: 20,
+    gap: 12,
   },
-  headingLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: Colors.primary[300],
-    opacity: 0.5,
-  },
-  sectionTitle: {
-    fontFamily: 'Poppins-SemiBold',
-    fontSize: 18,
-    color: Colors.primary[700],
-    marginHorizontal: 16,
-    letterSpacing: 0.2, // Slight letter spacing for better readability
+  metricCard: {
+    width: '48%',
+    minHeight: 100,
   },
 });
