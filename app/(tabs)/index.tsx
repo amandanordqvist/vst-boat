@@ -1,478 +1,240 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Platform, Text, Animated } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ChevronDown, Fuel, Gauge, MapPin, Clock, Battery, Thermometer } from 'lucide-react-native';
-import DashboardHeader from '@/components/DashboardHeader';
-import WeatherWidget from '@/components/WeatherWidget';
-import VesselStats from '@/components/VesselStats';
-import MaintenanceAlerts from '@/components/MaintenanceAlerts';
-import QuickActions from '@/components/QuickActions';
-import RecentActivity from '@/components/RecentActivity';
-import WeatherForecast from '@/components/WeatherForecast';
-import VesselSummaryCard from '@/components/VesselSummaryCard';
-import CriticalAlerts from '@/components/CriticalAlerts';
-import MaintenanceProgressBar from '@/components/MaintenanceProgressBar';
-import MaintenanceScheduleTimeline from '@/components/MaintenanceScheduleTimeline';
-import { DocumentCardList } from '@/components/DocumentCard';
-import PerformanceMetrics from '@/components/PerformanceMetrics';
-import LiveStatusWidget from '@/components/LiveStatusWidget';
-import SmartNotifications from '@/components/SmartNotifications';
-import EmergencyDashboard from '@/components/EmergencyDashboard';
-import ModernCard from '@/components/ModernCard';
-import EnhancedMetricCard from '@/components/EnhancedMetricCard';
-import { ShimmerCard, ShimmerMetric } from '@/components/ShimmerLoader';
-import { useUserRole } from '@/contexts/UserRoleContext';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Dimensions, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import Colors from '@/constants/Colors';
-import { router } from 'expo-router';
+import DashboardHeader from '@/components/DashboardHeader';
+import { EnhancedEmergencyInterface } from '@/components/EnhancedEmergencyInterface';
+import { EnhancedNotificationCenter } from '@/components/EnhancedNotificationCenter';
+import { CrewManagement } from '@/components/CrewManagement';
+import { AnalyticsDashboard } from '@/components/AnalyticsDashboard';
 
-// Sample data
-const maintenanceAlerts = [
-  {
-    id: '1',
-    type: 'critical' as const,
-    title: 'Engine Service Overdue',
-    message: 'Service is 45 days overdue. Schedule immediately.',
-    route: '/(tabs)/maintenance',
-  },
-  {
-    id: '2',
-    type: 'attention' as const,
-    title: 'Hull Cleaning Reminder',
-    message: 'Recommended cleaning in 7 days.',
-    route: '/(tabs)/maintenance',
-  },
-  {
-    id: '3',
-    type: 'ready' as const,
-    title: 'Safety Equipment Check',
-    message: 'All safety equipment is up-to-date.',
-    route: '/(tabs)/maintenance',
-  },
-];
-
-const recentActivities = [
-  {
-    id: '1',
-    type: 'checklist' as const,
-    title: 'Pre-departure Checklist Completed',
-    time: '2h ago',
-    user: 'Captain Mike',
-  },
-  {
-    id: '2',
-    type: 'maintenance' as const,
-    title: 'Propeller Replacement Scheduled',
-    time: '5h ago',
-    user: 'Maintenance Team',
-  },
-  {
-    id: '3',
-    type: 'location' as const,
-    title: 'Vessel Docked at Marina Bay',
-    time: '8h ago',
-    user: 'GPS Tracking',
-  },
-  {
-    id: '4',
-    type: 'fuel' as const,
-    title: 'Fuel Tank Filled (80 gallons)',
-    time: '1d ago',
-    user: 'Captain Mike',
-  },
-];
-
-// Weather forecast data
-const weatherForecast = [
-  {
-    id: '1',
-    day: 'Today',
-    date: 'May 24',
-    temperature: 24,
-    condition: 'Partly Cloudy',
-    iconUrl: 'https://cdn.weatherapi.com/weather/64x64/day/116.png',
-    windSpeed: 12,
-    precipitation: 0,
-  },
-  {
-    id: '2',
-    day: 'Tomorrow',
-    date: 'May 25',
-    temperature: 26,
-    condition: 'Sunny',
-    iconUrl: 'https://cdn.weatherapi.com/weather/64x64/day/113.png',
-    windSpeed: 8,
-    precipitation: 0,
-  },
-  {
-    id: '3',
-    day: 'Saturday',
-    date: 'May 26',
-    temperature: 23,
-    condition: 'Cloudy',
-    iconUrl: 'https://cdn.weatherapi.com/weather/64x64/day/119.png',
-    windSpeed: 10,
-    precipitation: 0,
-  },
-  {
-    id: '4',
-    day: 'Sunday',
-    date: 'May 27',
-    temperature: 22,
-    condition: 'Light Rain',
-    iconUrl: 'https://cdn.weatherapi.com/weather/64x64/day/296.png',
-    windSpeed: 15,
-    precipitation: 2.3,
-  },
-  {
-    id: '5',
-    day: 'Monday',
-    date: 'May 28',
-    temperature: 20,
-    condition: 'Rain',
-    iconUrl: 'https://cdn.weatherapi.com/weather/64x64/day/308.png',
-    windSpeed: 18,
-    precipitation: 5.7,
-  },
-];
-
-// Weather alerts data
-const weatherAlerts = [
-  {
-    id: 'wa1',
-    severity: 'watch' as const,
-    title: 'Small Craft Advisory',
-    description: 'Wind speeds of 15-20 knots expected. Small vessels should exercise caution.',
-    validUntil: 'May 25, 8:00 PM',
-  }
-];
-
-// Maintenance schedule
-const maintenanceSchedule = [
-  {
-    id: 'm1',
-    title: 'Engine Service',
-    description: 'Regular engine maintenance including oil change and filter replacement',
-    date: 'June 3, 2023',
-    isCompleted: false,
-    isUpcoming: true,
-    type: 'service' as const,
-    route: '/(tabs)/maintenance',
-  },
-  {
-    id: 'm2',
-    title: 'Hull Inspection',
-    description: 'Underwater hull inspection and cleaning',
-    date: 'June 15, 2023',
-    isCompleted: false,
-    isUpcoming: true,
-    type: 'inspection' as const,
-    route: '/(tabs)/maintenance',
-  },
-  {
-    id: 'm3',
-    title: 'Safety Equipment Check',
-    description: 'Inspection of all safety equipment onboard',
-    date: 'May 12, 2023',
-    isCompleted: true,
-    isUpcoming: false,
-    type: 'inspection' as const,
-    route: '/(tabs)/maintenance',
-  }
-];
-
-// Vessel documents
-const vesselDocuments = [
-  {
-    id: 'd1',
-    title: 'Vessel Registration',
-    documentType: 'pdf' as const,
-    dateAdded: 'Jan 15, 2023',
-    size: '1.2 MB',
-    category: 'Legal',
-    onView: () => console.log('View document'),
-  },
-  {
-    id: 'd2',
-    title: 'Insurance Policy',
-    documentType: 'pdf' as const,
-    dateAdded: 'Mar 10, 2023',
-    size: '2.4 MB',
-    category: 'Legal',
-    onView: () => console.log('View document'),
-  },
-  {
-    id: 'd3',
-    title: 'Engine Manual',
-    documentType: 'pdf' as const,
-    dateAdded: 'Feb 22, 2023',
-    size: '4.7 MB',
-    category: 'Manuals',
-    onView: () => console.log('View document'),
-  }
-];
-
-const vesselData = {
-  name: 'Sea Breeze',
-  type: 'Yacht',
-  length: '42 ft',
-  registration: 'FL-1234-AB',
-  status: 'docked',
-  location: 'Marina Bay, Slip #42',
-  nextTrip: {
-    destination: 'Catalina Island',
-    date: 'May 28, 2023',
-    time: '9:00 AM',
-  },
-  image: 'https://images.unsplash.com/photo-1567899378494-47b22a2ae96a?ixlib=rb-4.0.3&q=85&fm=jpg&crop=entropy&cs=srgb&w=1200'
-};
-
-// Standardized corner radius for all elements
-const CORNER_RADIUS = 18;
-// Tab bar height + extra safety margin
+const { width } = Dimensions.get('window');
 const TAB_BAR_HEIGHT = Platform.OS === 'ios' ? 90 : 70;
 
-interface NextTrip {
-  destination: string;
-  date: string;
-  time: string;
-}
+function TabOneScreen() {
+  const [selectedView, setSelectedView] = useState<'dashboard' | 'crew' | 'analytics'>('dashboard');
 
-const getNextTripWeather = (nextTrip: NextTrip | undefined) => {
-  if (!nextTrip) return {};
-  // Try to find a matching forecast by date
-  const forecast = weatherForecast.find(f => f.date === nextTrip.date);
-  if (forecast) {
-    return {
-      weatherIconUrl: forecast.iconUrl,
-      weatherCondition: forecast.condition,
-    };
+  if (selectedView === 'crew') {
+    return (
+      <CrewManagement 
+        onCrewUpdated={() => {}} 
+        onBack={() => setSelectedView('dashboard')}
+      />
+    );
   }
-  return {};
-};
 
-export default function DashboardScreen() {
-  const insets = useSafeAreaInsets();
-  // We'll default to 'owner' for now, but in a real app this would come from context
-  // const { role } = useUserRole();
-  const role = 'owner';
-  
-  // Loading state for demo purposes
-  const [isLoading, setIsLoading] = useState(true);
-  
-  // Animation values for staggered loading
-  const fadeAnim = useState(new Animated.Value(0))[0];
-  const slideAnim = useState(new Animated.Value(30))[0];
-  
-  useEffect(() => {
-    // Simulate loading time and start animations
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 800,
-          useNativeDriver: true,
-        }),
-        Animated.timing(slideAnim, {
-          toValue: 0,
-          duration: 800,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }, 1500);
-    return () => clearTimeout(timer);
-  }, [fadeAnim, slideAnim]);
-  
-  // Get only critical and attention alerts
-  const criticalAlerts = maintenanceAlerts.filter(
-    alert => alert.type === 'critical' || alert.type === 'attention'
-  );
-  
-  // Determine which components to show based on user role
-  const showDocuments = ['owner', 'captain'].includes(role);
-  const showMaintenanceSchedule = ['owner', 'captain', 'maintenance'].includes(role);
-  const showPerformanceMetrics = ['owner', 'captain'].includes(role);
-  const showEmergencyDashboard = true; // Always show for safety
-  
+  if (selectedView === 'analytics') {
+    return (
+      <AnalyticsDashboard 
+        onExportData={() => Alert.alert('Export', 'Analytics data exported successfully')} 
+        onBack={() => setSelectedView('dashboard')}
+      />
+    );
+  }
+
   return (
     <View style={styles.container}>
       <DashboardHeader 
-        username="Captain Mike" 
-        notifications={3}
-        vesselName={vesselData.name}
-        vesselStatus="Docked"
-        vesselLocation="Marina Bay"
+        username="Captain"
+        notifications={4}
+        vesselName="M/Y Seahawk"
+        vesselStatus="Operational"
+        vesselLocation="Stockholm Archipelago"
       />
-      
-      <ScrollView
-        style={styles.scrollContainer}
-        contentContainerStyle={[
-          styles.scrollContent,
-          { paddingBottom: TAB_BAR_HEIGHT + 24 } // Fixed bottom padding to prevent overlap
-        ]}
+      <ScrollView 
+        style={styles.scrollView} 
+        contentContainerStyle={{ paddingBottom: TAB_BAR_HEIGHT + 24 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Content with padding */}
-        <View style={styles.contentSection}>
-          {/* Scroll indicator */}
-          <Animated.View 
-            style={[
-              styles.scrollIndicator,
-              {
-                opacity: fadeAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [0, 0.6],
-                }),
-              }
-            ]}
+
+        {/* Weather Widget */}
+        <View style={styles.weatherCard}>
+          <LinearGradient
+            colors={['#4A90E2', '#357ABD']}
+            style={styles.weatherGradient}
           >
-            <View style={styles.scrollIndicatorDot} />
-          </Animated.View>
-          
-          {/* Vessel Summary Card - Top Priority */}
-          <Animated.View
-            style={{
-              opacity: fadeAnim,
-              transform: [{ translateY: slideAnim }],
-            }}
-          >
-            <ModernCard variant="default">
-              <VesselSummaryCard 
-                vesselName={vesselData.name}
-                vesselType={vesselData.type}
-                status="docked"
-                location={vesselData.location}
-                nextTrip={{
-                  ...vesselData.nextTrip,
-                  ...getNextTripWeather(vesselData.nextTrip),
-                }}
-                imageUrl={vesselData.image}
-              />
-            </ModernCard>
-          </Animated.View>
-          
-          {/* Key Metrics - Vessel Stats */}
-          {isLoading ? (
-            <View style={styles.metricsGrid}>
-              <ShimmerMetric />
-              <ShimmerMetric />
-              <ShimmerMetric />
-              <ShimmerMetric />
+            <View style={styles.weatherInfo}>
+              <View>
+                <Text style={styles.temperature}>18°C</Text>
+                <Text style={styles.weatherDescription}>Partly Cloudy</Text>
+              </View>
+              <Ionicons name="partly-sunny" size={50} color="rgba(255,255,255,0.9)" />
             </View>
-          ) : (
-            <Animated.View 
-              style={[
-                styles.metricsGrid,
-                {
-                  opacity: fadeAnim,
-                  transform: [{ translateY: slideAnim }],
-                }
-              ]}
-            >
-              <View style={styles.metricCard}>
-                <EnhancedMetricCard
-                  title="Fuel Level"
-                  value={75}
-                  unit="%"
-                  percentage={75}
-                  status="good"
-                  variant="minimal"
-                  icon={<Fuel size={16} color={Colors.primary[600]} />}
-                  onPress={() => router.push('/(tabs)/fuel')}
-                  size="small"
-                />
+            <View style={styles.weatherDetails}>
+              <View style={styles.weatherDetail}>
+                <Ionicons name="water" size={16} color="rgba(255,255,255,0.8)" />
+                <Text style={styles.weatherDetailText}>Wind: 8 kn SW</Text>
               </View>
-              
-              <View style={styles.metricCard}>
-                <EnhancedMetricCard
-                  title="Engine Temp"
-                  value={92}
-                  unit="°C"
-                  status="normal"
-                  variant="minimal"
-                  icon={<Thermometer size={16} color={Colors.primary[600]} />}
-                  size="small"
-                />
+              <View style={styles.weatherDetail}>
+                <Ionicons name="eye" size={16} color="rgba(255,255,255,0.8)" />
+                <Text style={styles.weatherDetailText}>Visibility: 10+ km</Text>
               </View>
-              
-              <View style={styles.metricCard}>
-                <EnhancedMetricCard
-                  title="Battery"
-                  value={87}
-                  unit="%"
-                  percentage={87}
-                  status="good"
-                  variant="minimal"
-                  icon={<Battery size={16} color={Colors.primary[600]} />}
-                  size="small"
-                />
-              </View>
-              
-              <View style={styles.metricCard}>
-                <EnhancedMetricCard
-                  title="RPM"
-                  value="2,450"
-                  status="normal"
-                  variant="minimal"
-                  icon={<Gauge size={16} color={Colors.primary[600]} />}
-                  size="small"
-                />
-              </View>
-            </Animated.View>
-          )}
-          
-          {/* Weather Information - Critical for Maritime Operations */}
-          <ModernCard variant="default">
-            <WeatherWidget 
-              temperature={24}
-              condition="Partly Cloudy"
-              location="Marina Bay"
-              windSpeed={12}
-              humidity={65}
-              iconUrl="https://cdn.weatherapi.com/weather/64x64/day/116.png"
-            />
-          </ModernCard>
-          
-          {/* Smart Notifications - Important Alerts */}
-          <SmartNotifications maxVisible={2} />
-          
-          {/* Quick Actions - Common Tasks */}
-          <QuickActions />
-          
-          {/* Performance Metrics - Analytics */}
-          {showPerformanceMetrics && (
-            <ModernCard variant="default">
-              <PerformanceMetrics 
-                fuelEfficiency={8.5}
-                engineLoad={65}
-                avgSpeed={12.5}
-                totalDistance={125}
-                operatingHours={42}
-                maintenanceScore={87}
-              />
-            </ModernCard>
-          )}
-          
-          {/* Maintenance Overview - Service Tracking */}
-          <MaintenanceProgressBar
-            label="Engine Service"
-            completed={8}
-            total={10}
-            dueDate="June 20, 2023"
-            onPress={() => router.push('/(tabs)/maintenance')}
-          />
-          
-          {/* Documents - Administrative */}
-          {showDocuments && (
-            <DocumentCardList 
-              documents={vesselDocuments}
-              title="Important Documents"
-            />
-          )}
-          
-          {/* Recent Activity - History */}
-          <RecentActivity activities={recentActivities} />
+            </View>
+          </LinearGradient>
         </View>
+
+        {/* Quick Actions */}
+        <View style={styles.quickActions}>
+          <Text style={styles.sectionTitle}>Quick Actions</Text>
+          <View style={styles.actionGrid}>
+            <TouchableOpacity 
+              style={styles.actionCard}
+              onPress={() => setSelectedView('crew')}
+            >
+              <LinearGradient
+                colors={[Colors.status.success, '#27AE60']}
+                style={styles.actionGradient}
+              >
+                <Ionicons name="people" size={24} color="#fff" />
+                <Text style={styles.actionText}>Crew</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.actionCard}
+              onPress={() => setSelectedView('analytics')}
+            >
+              <LinearGradient
+                colors={[Colors.primary[600], Colors.primary[700]]}
+                style={styles.actionGradient}
+              >
+                <Ionicons name="analytics" size={24} color="#fff" />
+                <Text style={styles.actionText}>Analytics</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.actionCard}>
+              <LinearGradient
+                colors={['#8B5CF6', '#7C3AED']}
+                style={styles.actionGradient}
+              >
+                <Ionicons name="checkmark-circle" size={24} color="#fff" />
+                <Text style={styles.actionText}>Checklist</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.actionCard}>
+              <LinearGradient
+                colors={['#F59E0B', '#D97706']}
+                style={styles.actionGradient}
+              >
+                <Ionicons name="map" size={24} color="#fff" />
+                <Text style={styles.actionText}>Navigate</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* System Status */}
+        <View style={styles.statusSection}>
+          <Text style={styles.sectionTitle}>System Status</Text>
+          <View style={styles.statusGrid}>
+            <View style={styles.statusCard}>
+              <View style={styles.statusHeader}>
+                <Ionicons name="battery-charging" size={20} color={Colors.status.success} />
+                <Text style={styles.statusTitle}>Battery</Text>
+              </View>
+              <Text style={styles.statusValue}>92%</Text>
+              <Text style={styles.statusSubtext}>All systems operational</Text>
+            </View>
+
+            <View style={styles.statusCard}>
+              <View style={styles.statusHeader}>
+                <Ionicons name="water" size={20} color={Colors.primary[600]} />
+                <Text style={styles.statusTitle}>Fuel</Text>
+              </View>
+              <Text style={styles.statusValue}>68%</Text>
+              <Text style={styles.statusSubtext}>~280L remaining</Text>
+            </View>
+
+            <View style={styles.statusCard}>
+              <View style={styles.statusHeader}>
+                <Ionicons name="speedometer" size={20} color={Colors.status.warning} />
+                <Text style={styles.statusTitle}>Engine</Text>
+              </View>
+              <Text style={styles.statusValue}>247h</Text>
+              <Text style={styles.statusSubtext}>Service due: 253h</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Recent Activity */}
+        <View style={styles.activitySection}>
+          <Text style={styles.sectionTitle}>Recent Activity</Text>
+          <View style={styles.activityList}>
+            <View style={styles.activityItem}>
+              <View style={[styles.activityIcon, { backgroundColor: Colors.status.success }]}>
+                <Ionicons name="checkmark" size={16} color="#fff" />
+              </View>
+              <View style={styles.activityContent}>
+                <Text style={styles.activityTitle}>Pre-departure checklist completed</Text>
+                <Text style={styles.activityTime}>2 hours ago</Text>
+              </View>
+            </View>
+
+            <View style={styles.activityItem}>
+              <View style={[styles.activityIcon, { backgroundColor: Colors.primary[600] }]}>
+                <Ionicons name="location" size={16} color="#fff" />
+              </View>
+              <View style={styles.activityContent}>
+                <Text style={styles.activityTitle}>Departed from Sandhamn Marina</Text>
+                <Text style={styles.activityTime}>2 hours ago</Text>
+              </View>
+            </View>
+
+            <View style={styles.activityItem}>
+              <View style={[styles.activityIcon, { backgroundColor: Colors.status.warning }]}>
+                <Ionicons name="camera" size={16} color="#fff" />
+              </View>
+              <View style={styles.activityContent}>
+                <Text style={styles.activityTitle}>Maintenance photo uploaded</Text>
+                <Text style={styles.activityTime}>1 day ago</Text>
+              </View>
+            </View>
+          </View>
+        </View>
+
+        {/* Crew Management Quick Access */}
+        <View style={styles.crewQuickAccess}>
+          <View style={styles.crewHeader}>
+            <Text style={styles.sectionTitle}>Crew Status</Text>
+            <TouchableOpacity onPress={() => setSelectedView('crew')}>
+              <Text style={styles.viewAllText}>View All</Text>
+            </TouchableOpacity>
+          </View>
+          
+          <View style={styles.crewList}>
+            <View style={styles.crewMember}>
+              <View style={styles.crewAvatar}>
+                <Text style={styles.crewInitials}>JA</Text>
+              </View>
+              <View style={styles.crewInfo}>
+                <Text style={styles.crewName}>John Anderson</Text>
+                <Text style={styles.crewRole}>Owner • Active now</Text>
+              </View>
+              <View style={[styles.statusDot, { backgroundColor: Colors.status.success }]} />
+            </View>
+
+            <View style={styles.crewMember}>
+              <View style={styles.crewAvatar}>
+                <Text style={styles.crewInitials}>SJ</Text>
+              </View>
+              <View style={styles.crewInfo}>
+                <Text style={styles.crewName}>Sarah Johnson</Text>
+                <Text style={styles.crewRole}>Captain • 2h ago</Text>
+              </View>
+              <View style={[styles.statusDot, { backgroundColor: Colors.status.warning }]} />
+            </View>
+          </View>
+        </View>
+
+        {/* Notifications */}
+        <EnhancedNotificationCenter />
+
+        {/* Emergency Interface */}
+        <EnhancedEmergencyInterface />
       </ScrollView>
     </View>
   );
@@ -481,38 +243,208 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.neutral[50], // Clean light background
+    backgroundColor: Colors.secondary[100],
   },
-  scrollContainer: {
+  scrollView: {
     flex: 1,
   },
-  scrollContent: {
-    paddingTop: 0, // No padding at top since vessel overview is full-width
+
+  weatherCard: {
+    margin: 20,
+    borderRadius: 16,
+    overflow: 'hidden',
   },
-  contentSection: {
-    paddingHorizontal: 16,
-    marginTop: -12,
+  weatherGradient: {
+    padding: 20,
   },
-  scrollIndicator: {
+  weatherInfo: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
-    height: 20,
+    marginBottom: 16,
   },
-  scrollIndicatorDot: {
-    width: 32,
-    height: 4,
-    backgroundColor: Colors.neutral[400],
-    borderRadius: 2,
+  temperature: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#fff',
   },
-  metricsGrid: {
+  weatherDescription: {
+    fontSize: 16,
+    color: 'rgba(255,255,255,0.8)',
+    marginTop: 4,
+  },
+  weatherDetails: {
+    flexDirection: 'row',
+    gap: 20,
+  },
+  weatherDetail: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  weatherDetailText: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 14,
+  },
+  quickActions: {
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: Colors.neutral[900],
+    marginBottom: 16,
+  },
+  actionGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    marginVertical: 20,
     gap: 12,
   },
-  metricCard: {
-    width: '48%',
-    minHeight: 100,
+  actionCard: {
+    width: (width - 56) / 2,
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  actionGradient: {
+    padding: 20,
+    alignItems: 'center',
+    gap: 8,
+  },
+  actionText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  statusSection: {
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+  statusGrid: {
+    gap: 12,
+  },
+  statusCard: {
+    backgroundColor: Colors.background,
+    padding: 16,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  statusHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+  },
+  statusTitle: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: Colors.neutral[700],
+  },
+  statusValue: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: Colors.neutral[900],
+  },
+  statusSubtext: {
+    fontSize: 12,
+    color: Colors.neutral[500],
+    textAlign: 'right',
+    marginTop: 2,
+  },
+  activitySection: {
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+  activityList: {
+    gap: 16,
+  },
+  activityItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.background,
+    padding: 16,
+    borderRadius: 12,
+    gap: 12,
+  },
+  activityIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  activityContent: {
+    flex: 1,
+  },
+  activityTitle: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: Colors.neutral[900],
+  },
+  activityTime: {
+    fontSize: 12,
+    color: Colors.neutral[500],
+    marginTop: 2,
+  },
+  crewQuickAccess: {
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+  crewHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  viewAllText: {
+    fontSize: 14,
+    color: Colors.primary[600],
+    fontWeight: '500',
+  },
+  crewList: {
+    backgroundColor: Colors.background,
+    borderRadius: 12,
+    padding: 16,
+    gap: 16,
+  },
+  crewMember: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  crewAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.primary[600],
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  crewInitials: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  crewInfo: {
+    flex: 1,
+  },
+  crewName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.neutral[900],
+  },
+  crewRole: {
+    fontSize: 12,
+    color: Colors.neutral[600],
+    marginTop: 2,
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
 });
+
+export default TabOneScreen;

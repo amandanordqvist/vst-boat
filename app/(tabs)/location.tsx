@@ -1,10 +1,13 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, Dimensions, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, Dimensions, Image, Alert, Modal } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MapPin, Navigation, Anchor, History, Compass, LocateFixed, Clock, MoreHorizontal, ChevronRight, Activity, Wind, Wrench } from 'lucide-react-native';
+import { MapPin, Navigation, Anchor, History, Compass, LocateFixed, Clock, MoreHorizontal, ChevronRight, Wind, Wrench, Camera, Eye } from 'lucide-react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring, withTiming, Easing } from 'react-native-reanimated';
 import Colors from '@/constants/Colors';
 import { LinearGradient } from 'expo-linear-gradient';
+import { GPSTrackingInterface } from '@/components/GPSTrackingInterface';
+import { CameraInterface } from '@/components/CameraInterface';
+import { Ionicons } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
 
@@ -142,7 +145,7 @@ function MapComponent({ mapHeight, onMarkerPress }: {
       <Animated.View style={[styles.mapContainer, { height: mapHeight.value }]}>
         <View style={[styles.map, styles.loadingContainer]}>
           <Text style={styles.loadingText}>Loading Map...</Text>
-          <Activity size={24} color={Colors.primary[500]} style={{ marginTop: 8 }} />
+          <Ionicons name="refresh" size={24} color={Colors.primary[500]} style={{ marginTop: 8 }} />
         </View>
       </Animated.View>
     );
@@ -241,6 +244,10 @@ export default function LocationScreen() {
   const mapHeight = useSharedValue(300);
   const [isMapExpanded, setIsMapExpanded] = useState(false);
   const [activeFeed, setActiveFeed] = useState('history');
+  const [showCamera, setShowCamera] = useState(false);
+  const [anchorWatch, setAnchorWatch] = useState(false);
+  const [showEmergencyModal, setShowEmergencyModal] = useState(false);
+  const [currentCoords] = useState('1°17\'N 103°51\'E');
   
   const mapStyle = useAnimatedStyle(() => ({
     height: mapHeight.value,
@@ -271,6 +278,60 @@ export default function LocationScreen() {
     // Simulate refreshing the location data
     console.log('Refreshing location data...');
   };
+
+  const handleAnchorWatch = () => {
+    setAnchorWatch(!anchorWatch);
+    Alert.alert(
+      anchorWatch ? 'Anchor Watch Off' : 'Anchor Watch On',
+      anchorWatch 
+        ? 'Anchor watch monitoring has been disabled.' 
+        : 'You will be alerted if the boat moves more than 50m from current position.',
+      [{ text: 'OK' }]
+    );
+  };
+
+  const handleEmergency = () => {
+    setShowEmergencyModal(true);
+  };
+
+  const handleManOverboard = () => {
+    setShowEmergencyModal(false);
+    Alert.alert(
+      '🆘 MAN OVERBOARD',
+      `Emergency coordinates marked:\n${currentCoords}\n\nEmergency contacts have been notified.`,
+      [
+        { text: 'Send VHF Mayday', style: 'destructive' },
+        { text: 'Call Coast Guard', style: 'default' },
+        { text: 'OK', style: 'cancel' }
+      ]
+    );
+  };
+
+  const handleShareLocation = () => {
+    Alert.alert(
+      'Share Location',
+      `Current position: ${currentCoords}\nMarina Bay\n\nShare via:`,
+      [
+        { text: 'SMS', onPress: () => console.log('Share via SMS') },
+        { text: 'Email', onPress: () => console.log('Share via Email') },
+        { text: 'Copy', onPress: () => console.log('Copied to clipboard') },
+        { text: 'Cancel', style: 'cancel' }
+      ]
+    );
+  };
+
+  const handleTakeLocationPhoto = () => {
+    setShowCamera(true);
+  };
+
+  const handlePhotoTaken = (photoUri: string) => {
+    setShowCamera(false);
+    Alert.alert(
+      'Photo Saved',
+      `Location photo saved with timestamp:\n${new Date().toLocaleString()}\nCoordinates: ${currentCoords}`,
+      [{ text: 'OK' }]
+    );
+  };
   
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -283,6 +344,11 @@ export default function LocationScreen() {
       </View>
       
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* GPS Tracking Interface */}
+        <View style={styles.trackingSection}>
+          <GPSTrackingInterface />
+        </View>
+        
         <View style={styles.currentLocation}>
           <MapComponent 
             mapHeight={mapHeight} 
@@ -338,13 +404,41 @@ export default function LocationScreen() {
                 <Text style={styles.actionText}>Navigate</Text>
               </TouchableOpacity>
               
-              <TouchableOpacity style={[styles.actionButton, styles.secondaryButton]}>
-                <Anchor size={18} color={Colors.primary[600]} />
-                <Text style={styles.secondaryButtonText}>Set Anchor</Text>
+              <TouchableOpacity 
+                style={[styles.actionButton, styles.secondaryButton, anchorWatch && styles.anchorActiveButton]}
+                onPress={handleAnchorWatch}
+              >
+                <Anchor size={18} color={anchorWatch ? "#FFFFFF" : Colors.primary[600]} />
+                <Text style={[styles.secondaryButtonText, anchorWatch && styles.anchorActiveText]}>
+                  {anchorWatch ? 'Watch On' : 'Set Anchor'}
+                </Text>
               </TouchableOpacity>
               
               <TouchableOpacity style={styles.moreButton}>
                 <MoreHorizontal size={20} color={Colors.neutral[700]} />
+              </TouchableOpacity>
+            </View>
+
+            {/* New Action Row */}
+            <View style={styles.secondaryActions}>
+              <TouchableOpacity style={styles.secondaryAction} onPress={handleTakeLocationPhoto}>
+                <Camera size={16} color={Colors.primary[600]} />
+                <Text style={styles.secondaryActionText}>Photo</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity style={styles.secondaryAction} onPress={handleShareLocation}>
+                <Ionicons name="share" size={16} color={Colors.primary[600]} />
+                <Text style={styles.secondaryActionText}>Share</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity style={styles.secondaryAction} onPress={() => Alert.alert('Copy Coordinates', currentCoords)}>
+                <Ionicons name="copy" size={16} color={Colors.primary[600]} />
+                <Text style={styles.secondaryActionText}>Copy</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity style={[styles.secondaryAction, styles.emergencyAction]} onPress={handleEmergency}>
+                <Ionicons name="warning" size={16} color="#FFFFFF" />
+                <Text style={[styles.secondaryActionText, { color: '#FFFFFF' }]}>SOS</Text>
               </TouchableOpacity>
             </View>
           </LinearGradient>
@@ -445,6 +539,58 @@ export default function LocationScreen() {
           )}
         </View>
       </ScrollView>
+
+      {/* Emergency Modal */}
+      <Modal
+        visible={showEmergencyModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowEmergencyModal(false)}
+      >
+        <View style={styles.emergencyModalOverlay}>
+          <View style={styles.emergencyModal}>
+            <Text style={styles.emergencyTitle}>🆘 EMERGENCY</Text>
+            <Text style={styles.emergencySubtitle}>Select emergency type:</Text>
+            
+            <TouchableOpacity style={styles.emergencyButton} onPress={handleManOverboard}>
+              <Ionicons name="warning" size={24} color="#FFFFFF" />
+              <Text style={styles.emergencyButtonText}>MAN OVERBOARD</Text>
+            </TouchableOpacity>
+            
+                          <TouchableOpacity style={[styles.emergencyButton, styles.medicalButton]} onPress={() => {
+              setShowEmergencyModal(false);
+              Alert.alert('Medical Emergency', 'Emergency services contacted with your location.');
+            }}>
+              <Ionicons name="medical" size={24} color="#FFFFFF" />
+              <Text style={styles.emergencyButtonText}>MEDICAL EMERGENCY</Text>
+            </TouchableOpacity>
+            
+                          <TouchableOpacity style={[styles.emergencyButton, styles.fireButton]} onPress={() => {
+              setShowEmergencyModal(false);
+              Alert.alert('Fire Emergency', 'Fire rescue services contacted with your location.');
+            }}>
+              <Ionicons name="flame" size={24} color="#FFFFFF" />
+              <Text style={styles.emergencyButtonText}>FIRE/EXPLOSION</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.cancelButton} 
+              onPress={() => setShowEmergencyModal(false)}
+            >
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Camera Interface */}
+      {showCamera && (
+        <CameraInterface
+          onPhotoTaken={handlePhotoTaken}
+          onCancel={() => setShowCamera(false)}
+          context="location_photo"
+        />
+      )}
     </View>
   );
 }
@@ -504,6 +650,9 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  trackingSection: {
+    marginBottom: 16,
   },
   currentLocation: {
     marginBottom: 20,
@@ -985,5 +1134,97 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.primary[600],
     marginRight: 6,
+  },
+  anchorActiveButton: {
+    backgroundColor: Colors.status.success,
+  },
+  anchorActiveText: {
+    color: '#FFFFFF',
+  },
+  secondaryActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: Colors.neutral[200],
+  },
+  secondaryAction: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: Colors.neutral[50],
+    marginHorizontal: 2,
+  },
+  emergencyAction: {
+    backgroundColor: '#FF3B30',
+  },
+  secondaryActionText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: Colors.primary[600],
+    marginTop: 4,
+  },
+  emergencyModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  emergencyModal: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    width: '100%',
+    maxWidth: 320,
+    alignItems: 'center',
+  },
+  emergencyTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#FF3B30',
+    marginBottom: 8,
+  },
+  emergencySubtitle: {
+    fontSize: 16,
+    color: Colors.neutral[600],
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  emergencyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FF3B30',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    marginBottom: 12,
+    width: '100%',
+    justifyContent: 'center',
+  },
+  medicalButton: {
+    backgroundColor: '#FF9500',
+  },
+  fireButton: {
+    backgroundColor: '#FF2D92',
+  },
+  emergencyButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  cancelButton: {
+    marginTop: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+  },
+  cancelButtonText: {
+    color: Colors.neutral[600],
+    fontSize: 16,
+    fontWeight: '500',
   },
 });

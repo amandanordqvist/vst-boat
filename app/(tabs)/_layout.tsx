@@ -1,11 +1,13 @@
+import React from 'react';
 import { Tabs, Redirect } from 'expo-router';
-import { Platform, View, StyleSheet, Text, TouchableOpacity } from 'react-native';
-import { Ship, CheckSquare, Wrench, MapPin, Fuel } from 'lucide-react-native';
+import { Platform, View, StyleSheet, Text, TouchableOpacity, Modal } from 'react-native';
+import { Ship, CheckSquare, Wrench, MapPin, Fuel, BookOpen, Camera } from 'lucide-react-native';
 import Colors from '@/constants/Colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useAuth } from '@/hooks/useAuth';
+import { CameraInterface } from '@/components/CameraInterface';
 
 // Extend the options type to include the href property
 interface ExtendedTabOptions {
@@ -17,17 +19,24 @@ interface ExtendedTabOptions {
 }
 
 // Define which tabs should be visible in the tab bar
-const VISIBLE_TABS = ['index', 'checklists', 'location', 'maintenance', 'fuel'];
+const VISIBLE_TABS = ['index', 'checklists', 'voyage', 'location', 'maintenance', 'fuel'];
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
   const isIOS = Platform.OS === 'ios';
   const { isAuthenticated, isLoading } = useAuth();
+  const [showCamera, setShowCamera] = React.useState(false);
   
   // If not loading and not authenticated, redirect to auth
   if (!isLoading && !isAuthenticated) {
     return <Redirect href="/auth" />;
   }
+
+  const handleCameraPhoto = (photoUri: string, context: any) => {
+    console.log('Photo captured:', photoUri, 'Context:', context);
+    // In real app, this would save the photo to the appropriate context
+    setShowCamera(false);
+  };
   
   // Custom tab bar component for active indicators
   const CustomTabBar = ({ state, descriptors, navigation }: BottomTabBarProps) => {
@@ -102,16 +111,25 @@ export default function TabLayout() {
             </View>
           );
         })}
+        
+        {/* Floating Camera Button */}
+        <TouchableOpacity 
+          style={[styles.floatingCameraButton, { bottom: isIOS ? insets.bottom + 80 : 90 }]}
+          onPress={() => setShowCamera(true)}
+        >
+          <Camera size={24} color="#FFFFFF" />
+        </TouchableOpacity>
       </View>
     );
   };
   
   return (
-    <Tabs
-      tabBar={props => <CustomTabBar {...props} />}
-      screenOptions={{
-        headerShown: false
-      }}>
+    <>
+      <Tabs
+        tabBar={props => <CustomTabBar {...props} />}
+        screenOptions={{
+          headerShown: false
+        }}>
       <Tabs.Screen
         name="index"
         options={{
@@ -127,6 +145,15 @@ export default function TabLayout() {
           title: 'Checklists',
           tabBarIcon: ({ color, size, focused }) => (
             <CheckSquare strokeWidth={2} size={focused ? size + 2 : size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="voyage"
+        options={{
+          title: 'Logbook',
+          tabBarIcon: ({ color, size, focused }) => (
+            <BookOpen strokeWidth={2} size={focused ? size + 2 : size} color={color} />
           ),
         }}
       />
@@ -174,13 +201,6 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="voyage"
-        options={{
-          title: 'Voyage',
-          headerShown: true,
-        }}
-      />
-      <Tabs.Screen
         name="weather"
         options={{
           title: 'Weather',
@@ -194,7 +214,21 @@ export default function TabLayout() {
           headerShown: true,
         }}
       />
+      
+      {/* Camera Modal */}
+      <Modal
+        visible={showCamera}
+        animationType="slide"
+        presentationStyle="fullScreen"
+      >
+        <CameraInterface
+          context="general"
+          onPhotoTaken={handleCameraPhoto}
+          onClose={() => setShowCamera(false)}
+        />
+      </Modal>
     </Tabs>
+    </>
   );
 }
 
@@ -258,5 +292,23 @@ const styles = StyleSheet.create({
   inactiveTabLabel: {
     color: Colors.neutral[500],
     fontSize: 10,
-  }
+  },
+  floatingCameraButton: {
+    position: 'absolute',
+    right: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: Colors.primary[600],
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
 });

@@ -1,11 +1,12 @@
-import React from 'react';
-import { View, Text, StyleSheet, Platform, TouchableOpacity, Image } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, Platform, TouchableOpacity, Image, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Bell, ChevronRight, Search, ChevronDown, MapPin, ChevronLeft } from 'lucide-react-native';
+import { Bell, ChevronRight, Search, ChevronDown, MapPin, ChevronLeft, X } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '@/constants/Colors';
 import { router } from 'expo-router';
 import useProfileNavigation from '@/hooks/useProfileNavigation';
+import { EnhancedNotificationCenter } from '@/components/EnhancedNotificationCenter';
 
 interface DashboardHeaderProps {
   username?: string;
@@ -32,6 +33,7 @@ export default function DashboardHeader({
 }: DashboardHeaderProps) {
   const isWeb = Platform.OS === 'web';
   const { navigateToProfile } = useProfileNavigation();
+  const [showNotifications, setShowNotifications] = useState(false);
   
   const handleVesselPress = () => {
     router.push('/(tabs)/vessel');
@@ -39,6 +41,10 @@ export default function DashboardHeader({
   
   const handleBack = () => {
     router.back();
+  };
+  
+  const handleNotificationPress = () => {
+    setShowNotifications(true);
   };
   
   // If we have a title, show simplified header
@@ -89,7 +95,7 @@ export default function DashboardHeader({
               <TouchableOpacity style={styles.iconWrapper}>
                 <Search color="#fff" size={20} />
               </TouchableOpacity>
-              <TouchableOpacity style={styles.iconWrapper}>
+              <TouchableOpacity style={styles.iconWrapper} onPress={handleNotificationPress}>
                 <Bell color="#fff" size={20} />
                 {notifications && notifications > 0 && (
                   <View style={styles.notificationBadge}>
@@ -134,6 +140,34 @@ export default function DashboardHeader({
       </LinearGradient>
       
       <View style={styles.bottomCurve} />
+      
+      {/* Notification Modal */}
+      <Modal
+        visible={showNotifications}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowNotifications(false)}
+      >
+        <SafeAreaView style={styles.modalContainer} edges={['top']}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Notifications</Text>
+            <TouchableOpacity 
+              style={styles.closeButton}
+              onPress={() => setShowNotifications(false)}
+              activeOpacity={0.7}
+            >
+              <X size={24} color={Colors.neutral[600]} />
+            </TouchableOpacity>
+          </View>
+          <EnhancedNotificationCenter 
+            onNotificationPress={(notification) => {
+              // Close modal when notification is pressed for better UX
+              setShowNotifications(false);
+              console.log('Notification pressed:', notification);
+            }}
+          />
+        </SafeAreaView>
+      </Modal>
     </View>
   );
 }
@@ -315,6 +349,28 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   backButton: {
+    padding: 4,
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: Colors.background,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.neutral[200],
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: Colors.neutral[900],
+    fontFamily: Platform.OS === 'ios' ? 'San Francisco' : 'Roboto',
+  },
+  closeButton: {
     padding: 4,
   },
 });

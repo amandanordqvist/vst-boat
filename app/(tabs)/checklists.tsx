@@ -7,6 +7,7 @@ import Swipeable from 'react-native-gesture-handler/Swipeable';
 import { GestureHandlerRootView, PanGestureHandler } from 'react-native-gesture-handler';
 import * as Haptics from 'expo-haptics';
 import { BlurView } from 'expo-blur';
+import { CameraInterface } from '@/components/CameraInterface';
 
 // Checklist types
 type ChecklistType = 'pre-departure' | 'post-use' | 'maintenance' | 'seasonal';
@@ -30,6 +31,9 @@ interface ChecklistItem {
   hasPhoto: boolean;
   photoUrl?: string;
   order?: number;
+  isMandatory?: boolean; // NEW: Mark items as mandatory vs optional
+  photoTimestamp?: string; // NEW: When photo was taken
+  requiresPhoto?: boolean; // NEW: Item requires photo for completion
 }
 
 // Checklist interface
@@ -53,16 +57,42 @@ const checklists: Checklist[] = [
   {
     id: '1',
     type: 'pre-departure',
-    title: 'Weekend Trip Pre-Departure Check',
+    title: '20-Point Pre-Departure Safety Check',
     date: '2023-06-15',
     items: [
-      { id: '1-1', category: 'safety', title: 'Life jackets present and accessible', status: 'pass', comments: 'All 8 life jackets accounted for', hasPhoto: false },
-      { id: '1-2', category: 'safety', title: 'Fire extinguishers charged', status: 'pass', comments: 'Gauges in green zone', hasPhoto: true, photoUrl: 'https://images.unsplash.com/photo-1551419762-4a3d998f6292?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8ZmlyZSUyMGV4dGluZ3Vpc2hlcnxlbnwwfHwwfHx8MA%3D%3D&auto=format&fit=crop&w=500&q=60' },
-      { id: '1-3', category: 'engine', title: 'Engine oil level', status: 'pass', comments: 'Topped off', hasPhoto: false },
-      { id: '1-4', category: 'systems', title: 'Navigation lights operational', status: 'fail', comments: 'Starboard light intermittent', hasPhoto: true, photoUrl: 'https://images.unsplash.com/photo-1520383278046-37a90eb02d79?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NXx8Ym9hdCUyMGxpZ2h0fGVufDB8fDB8fHww&auto=format&fit=crop&w=500&q=60' },
-      { id: '1-5', category: 'documentation', title: 'Registration documents onboard', status: 'pending', comments: '', hasPhoto: false },
+      // SAFETY EQUIPMENT (Mandatory)
+      { id: '1-1', category: 'safety', title: 'Life jackets present and accessible', status: 'pass', comments: 'All 8 life jackets accounted for', hasPhoto: false, isMandatory: true, requiresPhoto: true },
+      { id: '1-2', category: 'safety', title: 'Fire extinguishers charged and accessible', status: 'pass', comments: 'Gauges in green zone', hasPhoto: true, photoUrl: 'https://images.unsplash.com/photo-1551419762-4a3d998f6292?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8ZmlyZSUyMGV4dGluZ3Vpc2hlcnxlbnwwfHwwfHx8MA%3D%3D&auto=format&fit=crop&w=500&q=60', isMandatory: true, requiresPhoto: true },
+      { id: '1-3', category: 'safety', title: 'Emergency flares (not expired)', status: 'pending', comments: '', hasPhoto: false, isMandatory: true, requiresPhoto: true },
+      { id: '1-4', category: 'safety', title: 'First aid kit complete', status: 'pass', comments: 'Checked and restocked', hasPhoto: false, isMandatory: true },
+      { id: '1-5', category: 'safety', title: 'Emergency horn/whistle functional', status: 'pass', comments: 'Working properly', hasPhoto: false, isMandatory: true },
+      
+      // ENGINE & MECHANICAL (Mandatory)
+      { id: '1-6', category: 'engine', title: 'Engine oil level check', status: 'pass', comments: 'Level good, topped off', hasPhoto: false, isMandatory: true, requiresPhoto: true },
+      { id: '1-7', category: 'engine', title: 'Coolant level check', status: 'pass', comments: 'Level normal', hasPhoto: false, isMandatory: true },
+      { id: '1-8', category: 'engine', title: 'Belt condition inspection', status: 'pending', comments: '', hasPhoto: false, isMandatory: true, requiresPhoto: true },
+      { id: '1-9', category: 'engine', title: 'Fuel level and lines check', status: 'pass', comments: 'Tank 3/4 full, no leaks', hasPhoto: false, isMandatory: true },
+      
+      // SYSTEMS & ELECTRICAL (Mandatory)
+      { id: '1-10', category: 'systems', title: 'Navigation lights operational', status: 'fail', comments: 'Starboard light intermittent', hasPhoto: true, photoUrl: 'https://images.unsplash.com/photo-1520383278046-37a90eb02d79?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NXx8Ym9hdCUyMGxpZ2h0fGVufDB8fDB8fHww&auto=format&fit=crop&w=500&q=60', isMandatory: true, requiresPhoto: true },
+      { id: '1-11', category: 'systems', title: 'Bilge pump functional', status: 'pass', comments: 'Both pumps tested', hasPhoto: false, isMandatory: true },
+      { id: '1-12', category: 'systems', title: 'Battery charge level', status: 'pass', comments: 'All batteries 12.6V+', hasPhoto: false, isMandatory: true },
+      { id: '1-13', category: 'systems', title: 'VHF radio operational', status: 'pass', comments: 'Clear communication on Ch16', hasPhoto: false, isMandatory: true },
+      
+      // HULL & EXTERIOR (Mandatory)
+      { id: '1-14', category: 'exterior', title: 'Through-hull fittings secure', status: 'pass', comments: 'All seacocks operational', hasPhoto: false, isMandatory: true, requiresPhoto: true },
+      { id: '1-15', category: 'exterior', title: 'Anchor and rode inspection', status: 'pass', comments: 'Chain and rope in good condition', hasPhoto: false, isMandatory: true },
+      { id: '1-16', category: 'exterior', title: 'Dock lines and fenders stowed', status: 'pending', comments: '', hasPhoto: false, isMandatory: true },
+      
+      // DOCUMENTATION (Mandatory)
+      { id: '1-17', category: 'documentation', title: 'Registration documents onboard', status: 'pending', comments: '', hasPhoto: false, isMandatory: true },
+      { id: '1-18', category: 'documentation', title: 'Insurance certificate current', status: 'pass', comments: 'Valid through Dec 2024', hasPhoto: false, isMandatory: true },
+      
+      // OPTIONAL CHECKS
+      { id: '1-19', category: 'interior', title: 'Cabin ventilation adequate', status: 'pass', comments: 'All vents clear and functional', hasPhoto: false, isMandatory: false },
+      { id: '1-20', category: 'systems', title: 'GPS/Chart plotter functional', status: 'pass', comments: 'Updated charts, GPS signal strong', hasPhoto: false, isMandatory: false },
     ],
-    progress: 80,
+    progress: 65,
     completed: false,
   },
   {
@@ -71,9 +101,9 @@ const checklists: Checklist[] = [
     title: 'Day Trip Post-Use Checklist',
     date: '2023-06-10',
     items: [
-      { id: '2-1', category: 'exterior', title: 'Hull inspected for damage', status: 'pass', comments: 'No visible damage', hasPhoto: false },
-      { id: '2-2', category: 'engine', title: 'Engine flushed with fresh water', status: 'pass', comments: 'Completed for 15 minutes', hasPhoto: false },
-      { id: '2-3', category: 'interior', title: 'Cabin cleaned and secured', status: 'pass', comments: 'All items stowed properly', hasPhoto: true, photoUrl: 'https://images.unsplash.com/photo-1567899378494-47b22a2ae96a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8Ym9hdCUyMGNhYmlufGVufDB8fDB8fHww&auto=format&fit=crop&w=500&q=60' },
+      { id: '2-1', category: 'exterior', title: 'Hull inspected for damage', status: 'pass', comments: 'No visible damage', hasPhoto: false, isMandatory: true, requiresPhoto: true },
+      { id: '2-2', category: 'engine', title: 'Engine flushed with fresh water', status: 'pass', comments: 'Completed for 15 minutes', hasPhoto: false, isMandatory: true },
+      { id: '2-3', category: 'interior', title: 'Cabin cleaned and secured', status: 'pass', comments: 'All items stowed properly', hasPhoto: true, photoUrl: 'https://images.unsplash.com/photo-1567899378494-47b22a2ae96a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8Ym9hdCUyMGNhYmlufGVufDB8fDB8fHww&auto=format&fit=crop&w=500&q=60', isMandatory: false },
     ],
     progress: 100,
     completed: true,
@@ -85,10 +115,10 @@ const checklists: Checklist[] = [
     title: 'Monthly Maintenance Checklist',
     date: '2023-06-01',
     items: [
-      { id: '3-1', category: 'engine', title: 'Change engine oil and filter', status: 'pass', comments: 'Used synthetic 10W-30', hasPhoto: false },
-      { id: '3-2', category: 'systems', title: 'Inspect bilge pumps', status: 'pass', comments: 'Both pumps operational', hasPhoto: false },
-      { id: '3-3', category: 'exterior', title: 'Clean and wax hull', status: 'pass', comments: 'Used marine grade wax', hasPhoto: true, photoUrl: 'https://images.unsplash.com/photo-1609439385030-303abc3e6786?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8Ym9hdCUyMGh1bGx8ZW58MHx8MHx8fDA%3D&auto=format&fit=crop&w=500&q=60' },
-      { id: '3-4', category: 'systems', title: 'Check and service battery', status: 'fail', comments: 'Battery #2 showing low voltage', hasPhoto: false },
+      { id: '3-1', category: 'engine', title: 'Change engine oil and filter', status: 'pass', comments: 'Used synthetic 10W-30', hasPhoto: false, isMandatory: true, requiresPhoto: true },
+      { id: '3-2', category: 'systems', title: 'Inspect bilge pumps', status: 'pass', comments: 'Both pumps operational', hasPhoto: false, isMandatory: true, requiresPhoto: true },
+      { id: '3-3', category: 'exterior', title: 'Clean and wax hull', status: 'pass', comments: 'Used marine grade wax', hasPhoto: true, photoUrl: 'https://images.unsplash.com/photo-1609439385030-303abc3e6786?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8Ym9hdCUyMGh1bGx8ZW58MHx8MHx8fDA%3D&auto=format&fit=crop&w=500&q=60', isMandatory: false },
+      { id: '3-4', category: 'systems', title: 'Check and service battery', status: 'fail', comments: 'Battery #2 showing low voltage', hasPhoto: false, isMandatory: true, requiresPhoto: true },
     ],
     progress: 75,
     completed: false,
@@ -99,11 +129,11 @@ const checklists: Checklist[] = [
     title: 'Spring Preparation Checklist',
     date: '2023-04-15',
     items: [
-      { id: '4-1', category: 'exterior', title: 'Remove winter cover', status: 'pass', comments: 'Cover stored in garage', hasPhoto: false },
-      { id: '4-2', category: 'systems', title: 'Check all through-hull fittings', status: 'pass', comments: 'All secure with no corrosion', hasPhoto: false },
-      { id: '4-3', category: 'engine', title: 'Replace impeller', status: 'pass', comments: 'New OEM part installed', hasPhoto: true, photoUrl: 'https://images.unsplash.com/photo-1528150177508-7cc0c36cda5c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8Ym9hdCUyMGVuZ2luZXxlbnwwfHwwfHx8MA%3D%3D&auto=format&fit=crop&w=500&q=60' },
-      { id: '4-4', category: 'documentation', title: 'Renew insurance policy', status: 'pass', comments: 'Renewed for 12 months', hasPhoto: false },
-      { id: '4-5', category: 'safety', title: 'Replace expired flares', status: 'pass', comments: 'New flares expire in 3 years', hasPhoto: false },
+      { id: '4-1', category: 'exterior', title: 'Remove winter cover', status: 'pass', comments: 'Cover stored in garage', hasPhoto: false, isMandatory: true },
+      { id: '4-2', category: 'systems', title: 'Check all through-hull fittings', status: 'pass', comments: 'All secure with no corrosion', hasPhoto: false, isMandatory: true, requiresPhoto: true },
+      { id: '4-3', category: 'engine', title: 'Replace impeller', status: 'pass', comments: 'New OEM part installed', hasPhoto: true, photoUrl: 'https://images.unsplash.com/photo-1528150177508-7cc0c36cda5c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8Ym9hdCUyMGVuZ2luZXxlbnwwfHwwfHx8MA%3D%3D&auto=format&fit=crop&w=500&q=60', isMandatory: true, requiresPhoto: true },
+      { id: '4-4', category: 'documentation', title: 'Renew insurance policy', status: 'pass', comments: 'Renewed for 12 months', hasPhoto: false, isMandatory: true },
+      { id: '4-5', category: 'safety', title: 'Replace expired flares', status: 'pass', comments: 'New flares expire in 3 years', hasPhoto: false, isMandatory: true },
     ],
     progress: 100,
     completed: true,
@@ -186,58 +216,106 @@ const DraggableItem = ({ item, category, onReorder }: {
 };
 
 // Add this component for the actual checklist item rendering
-const ChecklistItemComponent = ({ item }: { item: ChecklistItem }) => (
-  <View style={[styles.checklistItem, { backgroundColor: Colors.background, borderColor: Colors.neutral[200] }]}>
+const ChecklistItemComponent = ({ item, onPhotoCapture, onStatusChange }: { 
+  item: ChecklistItem;
+  onPhotoCapture?: (itemId: string) => void;
+  onStatusChange?: (itemId: string, status: ItemStatus) => void;
+}) => (
+  <View style={[
+    styles.checklistItem, 
+    { backgroundColor: Colors.background, borderColor: Colors.neutral[200] },
+    item.isMandatory && styles.mandatoryItem
+  ]}>
     <View style={styles.checklistItemHeader}>
-      <Text style={[styles.itemTitle, { color: Colors.neutral[900] }]}>{item.title}</Text>
+      <View style={styles.itemTitleContainer}>
+        <Text style={[styles.itemTitle, { color: Colors.neutral[900] }]}>
+          {item.title}
+        </Text>
+        {item.isMandatory && (
+          <View style={styles.mandatoryBadge}>
+            <Text style={styles.mandatoryText}>REQUIRED</Text>
+          </View>
+        )}
+      </View>
       <View style={styles.statusContainer}>
         <TouchableOpacity 
           style={[
             styles.statusButton, 
-            item.status === 'pass' && styles.passButton
+            item.status === 'pass' && styles.passButton,
+            item.status === 'fail' && styles.enhancedFailButton,
+            item.status === 'pending' && styles.enhancedPendingButton
           ]}
+          onPress={() => onStatusChange && onStatusChange(item.id, 
+            item.status === 'pending' ? 'pass' : 
+            item.status === 'pass' ? 'fail' : 'pending'
+          )}
         >
           <Text style={styles.statusButtonText}>Pass</Text>
+          <Text style={[styles.statusButtonText, { 
+            color: item.status === 'pass' ? '#fff' : 
+                   item.status === 'fail' ? '#fff' : 
+                   Colors.neutral[600] 
+          }]}>
+            {item.status === 'pass' ? 'Pass' : 
+             item.status === 'fail' ? 'Fail' : 
+             'Pending'}
+          </Text>
         </TouchableOpacity>
-        <TouchableOpacity 
-          style={[
-            styles.statusButton, 
-            item.status === 'fail' && styles.failButton
-          ]}
-        >
-          <Text style={styles.statusButtonText}>Fail</Text>
-        </TouchableOpacity>
+        
+        {/* Direct Photo Button - Messenger Style */}
+        {(item.requiresPhoto || item.hasPhoto) && (
+          <TouchableOpacity 
+            style={[
+              styles.directPhotoButton,
+              item.hasPhoto && { backgroundColor: Colors.status.success }
+            ]}
+            onPress={() => onPhotoCapture && onPhotoCapture(item.id)}
+          >
+            <Camera size={16} color={item.hasPhoto ? '#fff' : Colors.primary[500]} />
+            {item.hasPhoto && (
+              <Text style={styles.photoCountText}>1</Text>
+            )}
+          </TouchableOpacity>
+        )}
       </View>
     </View>
     
-    {item.comments ? (
+    {/* Comments Section */}
+    {item.comments && (
       <View style={styles.commentContainer}>
-        <Text style={[styles.commentLabel, { color: Colors.neutral[900] }]}>Comments:</Text>
+        <Text style={[styles.commentLabel, { color: Colors.neutral[600] }]}>Comments:</Text>
         <Text style={[styles.commentText, { color: Colors.neutral[900] }]}>{item.comments}</Text>
       </View>
-    ) : (
-      <View style={styles.commentInputContainer}>
-        <TextInput
-          style={[styles.commentInput, { color: Colors.neutral[900], borderColor: Colors.neutral[200] }]}
-          placeholder="Add comments here..."
-          placeholderTextColor={Colors.neutral[500]}
-          multiline
-        />
+    )}
+    
+    {/* Photo Display with Timestamp */}
+    {item.hasPhoto && item.photoUrl && (
+      <View style={styles.photoContainer}>
+        <Image source={{ uri: item.photoUrl }} style={styles.itemPhoto} />
+        {item.photoTimestamp && (
+          <View style={styles.photoTimestamp}>
+            <Clock size={12} color={Colors.neutral[500]} />
+            <Text style={styles.timestampText}>
+              {new Date(item.photoTimestamp).toLocaleString('sv-SE')}
+            </Text>
+          </View>
+        )}
       </View>
     )}
     
-    {item.hasPhoto && item.photoUrl && (
-      <Image source={{ uri: item.photoUrl }} style={styles.itemPhoto} />
-    )}
-    
-    {!item.hasPhoto && (
-      <TouchableOpacity 
-        style={[styles.photoButton, { borderColor: Colors.neutral[200] }]}
-        onPress={() => console.log('Add photo for', item.id)}
-      >
-        <Camera size={16} color={Colors.primary[700]} />
-        <Text style={[styles.photoButtonText, { color: Colors.primary[700] }]}>Add Photo</Text>
-      </TouchableOpacity>
+    {/* Required Photo Indicator */}
+    {item.requiresPhoto && !item.hasPhoto && (
+      <View style={styles.photoRequiredContainer}>
+        <AlertTriangle size={14} color={Colors.status.warning} />
+        <Text style={styles.photoRequiredText}>Foto krävs för verifiering</Text>
+        <TouchableOpacity 
+          style={styles.takePhotoButton}
+          onPress={() => onPhotoCapture && onPhotoCapture(item.id)}
+        >
+          <Camera size={16} color="#fff" />
+          <Text style={styles.takePhotoText}>Ta foto</Text>
+        </TouchableOpacity>
+      </View>
     )}
   </View>
 );
@@ -267,6 +345,8 @@ export default function ChecklistsScreen() {
   const [showStatusFilter, setShowStatusFilter] = useState(false);
   const [statusFilter, setStatusFilter] = useState<ItemStatus | 'all'>('all');
   const [pdfExportModalVisible, setPdfExportModalVisible] = useState(false);
+  const [cameraModalVisible, setCameraModalVisible] = useState(false);
+  const [currentCameraItemId, setCurrentCameraItemId] = useState<string | null>(null);
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const colorScheme = useColorScheme();
   const insets = useSafeAreaInsets();
@@ -712,6 +792,55 @@ export default function ChecklistsScreen() {
     setDetailChecklist(checklist);
     setDetailModalVisible(true);
   };
+
+  // Handle direct photo capture for checklist items
+  const handlePhotoCapture = (itemId: string) => {
+    setCurrentCameraItemId(itemId);
+    setCameraModalVisible(true);
+  };
+
+  // Handle photo taken from camera
+  const handlePhotoTaken = (photoUri: string) => {
+    if (!currentCameraItemId) return;
+    
+    const timestamp = new Date().toISOString();
+    setEditedChecklists(prev => 
+      prev.map(checklist => ({
+        ...checklist,
+        items: checklist.items.map(item => 
+          item.id === currentCameraItemId 
+            ? { 
+                ...item, 
+                hasPhoto: true, 
+                photoUrl: photoUri,
+                photoTimestamp: timestamp 
+              }
+            : item
+        )
+      }))
+    );
+    
+    setCameraModalVisible(false);
+    setCurrentCameraItemId(null);
+    
+    // Show success feedback
+    Alert.alert('Foto sparad', 'Bilden har sparats med automatisk tidsstämpel', [{ text: 'OK' }]);
+  };
+
+  // Handle status changes for checklist items
+  const handleStatusChange = (itemId: string, newStatus: ItemStatus) => {
+    setEditedChecklists(prev => 
+      prev.map(checklist => ({
+        ...checklist,
+        items: checklist.items.map(item => 
+          item.id === itemId ? { ...item, status: newStatus } : item
+        )
+      }))
+    );
+    
+    // Haptic feedback
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
   
   // Filter and search checklists
   const filteredAndSearchedChecklists = editedChecklists
@@ -757,8 +886,28 @@ export default function ChecklistsScreen() {
   const renderDraggableItem = (item: ChecklistItem, category: ItemCategory) => {
     // Use regular rendering for compact view, draggable for standard view
     return viewType === 'standard' 
-      ? <DraggableItem key={item.id} item={item} category={category} onReorder={handleReorder} />
-      : <ChecklistItemComponent key={item.id} item={item} />;
+      ? <DraggableItemWithCallbacks key={item.id} item={item} category={category} onReorder={handleReorder} onPhotoCapture={handlePhotoCapture} onStatusChange={handleStatusChange} />
+      : <ChecklistItemComponent key={item.id} item={item} onPhotoCapture={handlePhotoCapture} onStatusChange={handleStatusChange} />;
+  };
+
+  // Enhanced DraggableItem with callbacks
+  const DraggableItemWithCallbacks = ({ item, category, onReorder, onPhotoCapture, onStatusChange }: { 
+    item: ChecklistItem; 
+    category: ItemCategory; 
+    onReorder: (itemId: string, category: ItemCategory, newOrder: number) => void;
+    onPhotoCapture: (itemId: string) => void;
+    onStatusChange: (itemId: string, status: ItemStatus) => void;
+  }) => {
+    const pan = useRef(new Animated.ValueXY()).current;
+    const [isDragging, setIsDragging] = useState(false);
+    
+    return (
+      <ChecklistItemComponent 
+        item={item} 
+        onPhotoCapture={onPhotoCapture} 
+        onStatusChange={onStatusChange} 
+      />
+    );
   };
   
   // Function for drag and drop reordering
@@ -1445,6 +1594,33 @@ export default function ChecklistsScreen() {
               </TouchableOpacity>
             </View>
           </View>
+        </View>
+      </Modal>
+
+      {/* Camera Modal for Direct Photo Capture */}
+      <Modal
+        visible={cameraModalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setCameraModalVisible(false)}
+      >
+        <View style={styles.cameraModalContainer}>
+          <View style={styles.cameraModalHeader}>
+            <Text style={styles.cameraModalTitle}>Ta foto för verifiering</Text>
+            <TouchableOpacity 
+              onPress={() => setCameraModalVisible(false)}
+              style={styles.cameraCloseButton}
+            >
+              <X size={24} color="#fff" />
+            </TouchableOpacity>
+          </View>
+          
+          <CameraInterface
+            isVisible={cameraModalVisible}
+            onPhotoTaken={(photoUri, timestamp) => handlePhotoTaken(photoUri)}
+            onClose={() => setCameraModalVisible(false)}
+            context="checklist"
+          />
         </View>
       </Modal>
     </Animated.View>
@@ -2379,5 +2555,132 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+
+  // NEW STYLES FOR ENHANCED CHECKLIST FEATURES
+  
+  // Mandatory item styles
+  mandatoryItem: {
+    borderLeftWidth: 4,
+    borderLeftColor: Colors.status.warning,
+  },
+  itemTitleContainer: {
+    flex: 1,
+  },
+  mandatoryBadge: {
+    backgroundColor: Colors.status.warning,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginTop: 4,
+    alignSelf: 'flex-start',
+  },
+  mandatoryText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#fff',
+  },
+
+  // Enhanced status button styles (combined with existing styles above)
+  enhancedPendingButton: {
+    backgroundColor: Colors.neutral[300],
+  },
+  enhancedFailButton: {
+    backgroundColor: Colors.status.error,
+  },
+
+  // Direct photo button (Messenger style)
+  directPhotoButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.secondary[200],
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 8,
+    borderWidth: 2,
+    borderColor: Colors.primary[500],
+  },
+  photoCountText: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: Colors.status.success,
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '600',
+    borderRadius: 8,
+    width: 16,
+    height: 16,
+    textAlign: 'center',
+    lineHeight: 16,
+  },
+
+  // Photo display with timestamp
+  photoContainer: {
+    marginTop: 8,
+  },
+  photoTimestamp: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+    opacity: 0.7,
+  },
+  timestampText: {
+    fontSize: 11,
+    color: Colors.neutral[500],
+    marginLeft: 4,
+  },
+
+  // Required photo indicator
+  photoRequiredContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.status.warning + '20',
+    padding: 8,
+    borderRadius: 6,
+    marginTop: 8,
+  },
+  photoRequiredText: {
+    flex: 1,
+    fontSize: 12,
+    color: Colors.status.warning,
+    marginLeft: 6,
+  },
+  takePhotoButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.primary[500],
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+  },
+  takePhotoText: {
+    fontSize: 12,
+    color: '#fff',
+    fontWeight: '600',
+    marginLeft: 4,
+  },
+
+  // Camera modal styles
+  cameraModalContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.9)',
+  },
+  cameraModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    paddingTop: 60,
+    backgroundColor: 'rgba(0,0,0,0.8)',
+  },
+  cameraModalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  cameraCloseButton: {
+    padding: 8,
   },
 });
